@@ -1,0 +1,49 @@
+Categories:
+  - System
+License: GPL-3.0-or-later
+AuthorName: Rufid contributors
+SourceCode: https://github.com/GPLaider/rufid
+IssueTracker: https://github.com/GPLaider/rufid/issues
+Changelog: https://github.com/GPLaider/rufid/releases
+
+AutoName: Rufid
+
+MaintainerNotes: |-
+  The build must not use payloads extracted from opaque APKs. FreeDOS payload
+  staging uses the official FreeDOS 1.4 LiteUSB archive, records its hash, and
+  audits every package ZIP in the image for corresponding SOURCE/ entries;
+  UEFI:NTFS and wimlib are built from pinned upstream source paths.
+  7-Zip-JBinding is built from pinned upstream source with RAR/unRAR native
+  sources excluded from the Android CMake input.
+
+RepoType: git
+Repo: https://github.com/GPLaider/rufid.git
+
+Builds:
+  - versionName: 0.1.0
+    versionCode: 1
+    commit: v0.1.0
+    sudo:
+      - apt-get update
+      - apt-get install -y --no-install-recommends autoconf automake bc bison clang cmake cpio curl dosfstools file flex g++ gcc git lld llvm make mingw-w64 mtools ninja-build p7zip-full patch perl pkg-config python3 rsync unzip wget zip
+    gradle:
+      - yes
+    rm:
+      - payloads/build
+      - payloads/downloads
+      - payloads/out
+      - payloads/sources
+    build:
+      - export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$ANDROID_NDK}"
+      - export ANDROID_HOME="${ANDROID_HOME:-$ANDROID_SDK}"
+      - export ANDROID_SDK_ROOT="$ANDROID_HOME"
+      - export ANDROID_API=24
+      - bash ./scripts/fdroid/stage-source-payloads.sh
+    ndk: r29
+    gradleprops:
+      - rufid.includePayloads=true
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.1.0
+CurrentVersionCode: 1

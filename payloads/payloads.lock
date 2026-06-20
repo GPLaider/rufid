@@ -1,0 +1,28 @@
+# Rufid optional payload lock file.
+#
+# Payload binaries are not committed. Build or fetch from these pinned upstreams,
+# then stage outputs under payloads/out/.
+
+UEFI_NTFS_REPO=https://github.com/pbatard/uefi-ntfs.git
+UEFI_NTFS_REF=42de94dce5a0be68aab4e410494bb9d986dbcac4
+UEFI_NTFS_TAG=v2.8
+
+WIMLIB_REPO=https://github.com/ebiggers/wimlib.git
+WIMLIB_REF=77e0e2b4896e462a7ec21f59d2092ee4df2d94f4
+WIMLIB_TAG=v1.14.5
+
+SEVENZIP_JBINDING_REPO=https://github.com/borisbrodski/sevenzipjbinding.git
+SEVENZIP_JBINDING_REF=85d4923741aa85a5c90a6f69c1207c172a49ffa4
+SEVENZIP_JBINDING_TAG=master
+
+SEVENZIP_JBINDING_ANDROID_REPO=https://github.com/omicronapps/7-Zip-JBinding-4Android.git
+SEVENZIP_JBINDING_ANDROID_REF=875f38aac441f41e6eb693177e020e97971dca97
+SEVENZIP_JBINDING_ANDROID_TAG=Release-16.02-2.03
+
+FREEDOS_LITEUSB_URL=https://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/distributions/1.4/FD14-LiteUSB.zip
+FREEDOS_LITEUSB_SHA256=857dcd2ebf9d3d094320154db5fb5b830acba6fb98f981a95a0ca7ab3350338b
+FREEDOS_LITEUSB_INNER=FD14LITE.img
+
+BUILDROOT_VERSION=2026.05
+BUILDROOT_URL=https://buildroot.org/downloads/buildroot-2026.05.tar.xz
+BUILDROOT_SHA256=9d2f3af10fcac763a61ff6e41894a033f9ecf9267ba13dd0912eedcd3be2b22a

@@ -1,0 +1,11 @@
+Initial public source release:
+
+- USB image writing, URL streaming, manual verification, and whole-device backup
+- Packaged FreeDOS LiteUSB write mode
+- Official ISO picker entries for Windows and six Linux distributions
+- Read-only USB boot media inspection
+- Guarded FAT32/exFAT USB recovery with post-write metadata verification
+- Device-derived volume labels after recovery format
+- Local last-error report without network crash upload
+- F-Droid payload staging for FreeDOS, UEFI:NTFS, wimlib, and 7-Zip-JBinding
+- FreeDOS package-source audit and 7-Zip-JBinding RAR/unRAR exclusion

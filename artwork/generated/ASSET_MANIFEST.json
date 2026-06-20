@@ -1,0 +1,222 @@
+[
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 48,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+    "sha256": "87712a0a1ec18f45fe26c2d8aac99a8bb6d55b28700dc7021a9e546b314b79e0",
+    "width": 48
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 48,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    "sha256": "7a98484d43dcb23743d8ed4729d5f0cda24b7e90f9268701f9181ca2c8ecc639",
+    "width": 48
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 72,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+    "sha256": "71365ec96647f557f27f483a421a5409db6486d22dae794e3556f42b6d0ed980",
+    "width": 72
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 72,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+    "sha256": "bbf5633a9d40f355a244d931c4f7fa306be0bb9adb67f9731864fe017d819037",
+    "width": 72
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 96,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+    "sha256": "67f98eb534548036d2f59f8898eeba2a77b165543e03544cd138bec9fcbb18f1",
+    "width": 96
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 96,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+    "sha256": "7eb77d718332488fa725cd90532296e62003c85259275ddcd2ceb893c39033d7",
+    "width": 96
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 144,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+    "sha256": "bc5c8775af1410a7ec220dfc0f810e52ff6170c7088e6bc044e5ac5214e83855",
+    "width": 144
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 144,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+    "sha256": "bc13af1e892b8dd07b393cabd5be7eb5068c6ec10262db5fcc7600ca890d4ac6",
+    "width": 144
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 192,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+    "sha256": "1ffa06f0fc9ff87c126e36fbf2c3bf3029c8a4a0d46462be6a57174fd8289385",
+    "width": 192
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 192,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+    "sha256": "8ac1e8811f28bde6b04506e7b1faab70324da61b6c1ef9ae74b23478ddac595c",
+    "width": 192
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 108,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+    "sha256": "d3dc4859aae16f2bf6bf8d92e7dcc68e0e1837ec0387c0a505b831d08b69c9f7",
+    "width": 108
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 162,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+    "sha256": "93f452cc9782baf3d1921b942d3a3ef1b56656792f7b0dd9dcdccb641036f4c7",
+    "width": 162
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 216,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+    "sha256": "621aa577806a972c90d879185e4171e86b867ac9e6a6182c38b85a03cb1749e7",
+    "width": 216
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 324,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+    "sha256": "3ea3509d26f231176cc597503cf3a01966e96dc92ea8d2f81c8fbf7139a9f729",
+    "width": 324
+  },
+  {
+    "alpha": [
+      0,
+      255
+    ],
+    "height": 432,
+    "mode": "RGBA",
+    "path": "app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+    "sha256": "1bc5cff8bfa1de858927a2a6118aa022ba62416f32362820bc3b70a2dcd0d7b6",
+    "width": 432
+  },
+  {
+    "alpha": [
+      255,
+      255
+    ],
+    "height": 512,
+    "mode": "RGBA",
+    "path": "fastlane/metadata/android/en-US/images/icon.png",
+    "sha256": "2ad0f92acd433876214cd6e97c5f1fccbe152979f5af6c4072285e0c4d2196f2",
+    "width": 512
+  },
+  {
+    "alpha": [
+      255,
+      255
+    ],
+    "height": 500,
+    "mode": "RGBA",
+    "path": "fastlane/metadata/android/en-US/images/featureGraphic.png",
+    "sha256": "88c09430a05a3608caf8b62e1b0e39628979b6c0a767dd7a7d33df45d75a049d",
+    "width": 1024
+  },
+  {
+    "alpha": [
+      255,
+      255
+    ],
+    "height": 256,
+    "mode": "RGBA",
+    "path": "artwork/generated/readme-logo.png",
+    "sha256": "22fb635d622349cebc4b684941dea9d08675ce1866e8e0462471619daefa3cfa",
+    "width": 256
+  },
+  {
+    "alpha": [
+      255,
+      255
+    ],
+    "height": 512,
+    "mode": "RGBA",
+    "path": "artwork/generated/rufid-icon-512.png",
+    "sha256": "2ad0f92acd433876214cd6e97c5f1fccbe152979f5af6c4072285e0c4d2196f2",
+    "width": 512
+  },
+  {
+    "alpha": [
+      255,
+      255
+    ],
+    "height": 640,
+    "mode": "RGBA",
+    "path": "artwork/generated/repo-social-preview.png",
+    "sha256": "a5a6851163af1c481e61b93605178ab252f65f9bf743d784cc8b8ac2fdcd42e2",
+    "width": 1280
+  }
+]

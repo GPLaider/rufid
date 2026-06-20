@@ -1,0 +1,12 @@
+.gradle/
+.kotlin/
+local.properties
+*.iml
+__pycache__/
+*.pyc
+app/build/
+payloads/build/
+payloads/out/
+payloads/sources/
+payloads/downloads/
+payloads/*.sha256

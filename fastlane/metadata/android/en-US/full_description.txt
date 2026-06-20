@@ -1,0 +1,11 @@
+Rufid is a GPL Android USB image writer for phone-first boot media workflows.
+
+It can write local ISO/IMG files, stream direct image URLs to USB, create a packaged FreeDOS LiteUSB drive, verify written images, reinitialize a USB drive back into a normal FAT32 or exFAT volume, back up a USB device to an Android document, inspect boot media, run read benchmarks, show USB diagnostics, extract ZIP files to a selected folder, and preview format plans.
+
+The URL workflow includes a direct image URL field and a picker for common official ISO sources: Windows, Ubuntu, Fedora, Debian, Linux Mint, Arch Linux, and openSUSE.
+
+Rufid avoids ad SDKs, analytics SDKs, billing SDKs, Firebase, external crash SDKs, copied third-party app code, and opaque APK-extracted payloads. Error reporting is local-only.
+
+FreeDOS, UEFI:NTFS, wimlib, and 7-Zip-JBinding are staged from pinned upstream source builds or verified upstream distribution inputs. The FreeDOS staging step audits every FreeDOS package ZIP in the official LiteUSB image for corresponding SOURCE entries, and the 7-Zip-JBinding Android build excludes RAR/unRAR native sources. The F-Droid build path packages this audited payload set by default.
+
+USB recovery is a guarded metadata quick-wipe plus FAT32 or exFAT format flow. It is not secure erase and not a full-disk wipe.
