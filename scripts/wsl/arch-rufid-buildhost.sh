@@ -41,6 +41,7 @@ pacman -S --needed --noconfirm \
   p7zip \
   mtools \
   dosfstools \
+  nasm \
   rsync \
   python \
   python-pillow \
@@ -78,7 +79,7 @@ For Android native payloads, install an Android NDK and export it before running
 
 From the Rufid project root:
   ./scripts/payloads/fetch-sources.sh
-  ./scripts/payloads/build-freedos.sh
+  ./scripts/payloads/build-freedos-from-source.sh
   ./scripts/payloads/build-uefi-ntfs.sh
   ./scripts/payloads/build-wimlib-android.sh
   ./scripts/payloads/build-sevenzipjbinding-android.sh

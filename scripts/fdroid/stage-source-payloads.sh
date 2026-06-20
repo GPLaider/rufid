@@ -30,22 +30,22 @@ rm -rf payloads/out payloads/build
 mkdir -p payloads/out
 
 bash ./scripts/payloads/fetch-sources.sh
-bash ./scripts/payloads/build-freedos.sh
+bash ./scripts/payloads/build-freedos-from-source.sh
 bash ./scripts/payloads/build-uefi-ntfs.sh
 bash ./scripts/payloads/build-wimlib-android.sh
 bash ./scripts/payloads/build-sevenzipjbinding-android.sh
 
 cat > payloads/out/FDROID_SOURCE_PAYLOADS.txt <<'EOF'
 F-Droid payload staging:
-- included: FreeDOS LiteUSB
+- included: FreeDOS source-built minimal FAT16 image
 - included: UEFI:NTFS
 - included: wimlib
 - included: 7-Zip-JBinding
 
-FreeDOS is staged from the official FreeDOS 1.4 LiteUSB distribution archive.
-The archive is SHA-256 verified, and the build audits every FreeDOS package
-ZIP in the image for corresponding SOURCE/ entries before packaging the
-payload.
+FreeDOS uses the official FreeDOS 1.4 LiteUSB archive only as the verified
+package/source input. The staged payload image is assembled from source-built
+FreeDOS kernel, FreeCOM, SYS, and boot sector artifacts using a pinned
+source-built OpenWatcom toolchain.
 EOF
 
 echo "Staged F-Droid payloads under payloads/out"

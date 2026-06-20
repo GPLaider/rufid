@@ -6,7 +6,7 @@ Rufid turns an Android phone into a clean, auditable USB image writer.
 
 ## Short Pitch
 
-Need boot media and only have your phone? Rufid writes ISO/IMG files, direct image URLs, and a packaged FreeDOS LiteUSB image to USB mass-storage devices through Android OTG, without ads, analytics, accounts, or opaque APK-derived payloads.
+Need boot media and only have your phone? Rufid writes ISO/IMG files, direct image URLs, and a packaged source-built FreeDOS image to USB mass-storage devices through Android OTG, without ads, analytics, accounts, or opaque APK-derived payloads.
 
 ## Store-Style Bullets
 
@@ -38,7 +38,7 @@ No ads. No account. No fake cleanup feature. Just a focused USB writer with loca
 
 ### Clean Payloads
 
-FreeDOS, UEFI:NTFS, wimlib, and 7-Zip-JBinding are staged from documented upstream inputs, not lifted from an opaque Android APK.
+FreeDOS, UEFI:NTFS, wimlib, and 7-Zip-JBinding are staged from documented upstream source or package/source inputs, not lifted from an opaque Android APK.
 
 ### F-Droid First
 
@@ -48,11 +48,11 @@ The F-Droid path is the full app path. It includes the audited payload set inste
 
 ### X / Mastodon
 
-Rufid is a GPL Android USB image writer for OTG workflows: ISO/IMG, URL-to-USB, packaged FreeDOS, USB diagnostics, and documented payload provenance. No ads, no analytics, F-Droid prepared.
+Rufid is a GPL Android USB image writer for OTG workflows: ISO/IMG, URL-to-USB, packaged source-built FreeDOS, USB diagnostics, and documented payload provenance. No ads, no analytics, F-Droid prepared.
 
 ### Reddit
 
-I have been working on Rufid, an Android USB image writer aimed at phone-first boot media workflows. It can write local images, stream direct image URLs, use a packaged FreeDOS LiteUSB image, inspect USB boot media, and show payload provenance inside the app. The project is GPL and prepared for F-Droid review.
+I have been working on Rufid, an Android USB image writer aimed at phone-first boot media workflows. It can write local images, stream direct image URLs, use a packaged FreeDOS image, inspect USB boot media, and show payload provenance inside the app. The project is GPL and prepared for F-Droid review.
 
 ### F-Droid / Repo Intro
 

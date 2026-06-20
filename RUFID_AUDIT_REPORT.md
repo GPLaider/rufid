@@ -6,7 +6,7 @@ Scope: local/static/build audit plus Samsung Z Flip wireless-ADB testing, includ
 
 ## Executive Result
 
-Rufid builds, unit-tests, passes Android lint, passes WSL shellcheck, and now uses a Rufus-like main workflow instead of a scattered action stack. Payload packaging is enabled by default, and the F-Droid release candidate includes FreeDOS LiteUSB, UEFI:NTFS, wimlib, and 7-Zip-JBinding from documented upstream-pinned inputs.
+Rufid builds, unit-tests, passes Android lint, passes WSL shellcheck, and now uses a Rufus-like main workflow instead of a scattered action stack. Payload packaging is enabled by default, and the F-Droid release candidate includes a source-built FreeDOS image, UEFI:NTFS, wimlib, and 7-Zip-JBinding from documented upstream-pinned inputs.
 
 No ad SDK, billing SDK, analytics SDK, Firebase SDK, external crash-reporting SDK, copied third-party package marker, copied Rufus asset, or opaque APK-extracted payload marker was found in the inspected APK/runtime dependency scan.
 
@@ -15,11 +15,11 @@ The public documentation set now includes README screenshots, Fastlane phone scr
 ## Verification Commands
 
 ```powershell
-..\..\work\tools\gradle-8.9\bin\gradle.bat :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+gradle --no-daemon :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
 ```
 
 ```bash
-shellcheck -x -P scripts/payloads scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*.sh
+shellcheck -x -S warning scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*.sh
 ```
 
 ## Build Artifacts
@@ -27,11 +27,11 @@ shellcheck -x -P scripts/payloads scripts/payloads/*.sh scripts/fdroid/*.sh scri
 - Package: `io.github.rufid`
 - Version: `0.1.0` / `versionCode=1`
 - Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
-- Debug size: `47466753` bytes
-- Debug SHA-256: `D06EEF11CF7F0C15371C9D1803C6347E145C65F1975B117761682995F67A9270`
+- Debug size: `12311462` bytes
+- Debug SHA-256: `149ed082a07509fd340f15667755046db686f372323499ee4cab55ee57129f51`
 - F-Droid payload release candidate: `app/build/outputs/apk/release/app-release-unsigned.apk`
-- Release size: `46344449` bytes
-- Release SHA-256: `B93EAAD675E3DD56FA2BDCF23064698EACE723C85427421C898CA340B8522C15`
+- Release size: `11882897` bytes
+- Release SHA-256: `e4f73bc12103ab4dad24eb1d821930d970e8b351c34438292c5b2b2bfcfa9451`
 
 The release candidate is unsigned, as expected for local/F-Droid handoff.
 
@@ -42,7 +42,6 @@ The release candidate is unsigned, as expected for local/F-Droid handoff.
 - `:app:testDebugUnitTest`: passed, 20 tests, 0 failures
 - `:app:lintDebug`: passed, `No issues found.`
 - Debug/release APK content check: staged payload/native entries `18`; `META-INF/version-control-info.textproto` absent.
-- `--project-prop=rufid.includePayloads=false :app:assembleDebug`: passed as a source-only smoke check
 - WSL Arch `shellcheck`: passed for payload, F-Droid, and WSL scripts
 
 ## Source Inventory
@@ -158,8 +157,8 @@ Real-device screenshots captured on the Samsung Z Flip test device:
 
 Staged payload hashes:
 
-- `freedos.img`: `f539d456b792594bc3ca59d4e0f4c23d4f1fee73370c1390b2da245400718d36`
-- `freedos.7z`: `cf31fd2c2d4c775c505c312271e48aaa0620dec6a25b5a45785904a049f9228e`
+- `freedos.img`: `88ea18d67f25214428179530a1c2aa8709a3a02cb7ef26912909781620f02f3d`
+- `freedos.7z`: `b51b5f4b462f895e3eb23bc906a18d42cdca9ee76de163ebdee6ef9f8c724c84`
 - `uefi-ntfs.img`: `90ef88628ab417801472b1f563aab939afafb74e495f0787511068634f87713e`
 - `arm64-v8a/libwimutils.so`: `17b42b507a277c7f077ba6abb86c100438ca35778e2ccb3c926407f6bacf3759`
 - `armeabi-v7a/libwimutils.so`: `cd0c1fb014f79aef4d56790d48d862d180b05e14013d8df297e785aa1dde7275`
@@ -170,7 +169,7 @@ Staged payload hashes:
 - `x86/lib7-Zip-JBinding.so`: `d754541ed462c7d30ae8e557ee0a61e53094ab9fbd8e14531ff58e10ac7b992d`
 - `x86_64/lib7-Zip-JBinding.so`: `853db8ac8d1d3e008bd985b35b889fa55f0e7533464ce48dcadb1899425fc528`
 
-FreeDOS is staged from the official FreeDOS 1.4 LiteUSB archive, verified by SHA-256. The build extracts FreeDOS package ZIPs from the image and verifies that all `65` packages contain corresponding `SOURCE/` entries; `62` nested `SOURCES.ZIP` archives are recorded in `payloads/out/source-provenance/freedos/packages-source-manifest.tsv`. UEFI:NTFS is built from pinned upstream source. wimlib and 7-Zip-JBinding are staged as Android NDK r29 native libraries from pinned upstream build paths. 7-Zip-JBinding excludes RAR/unRAR native sources before compilation. No payload is taken from any opaque APK.
+FreeDOS uses the official FreeDOS 1.4 LiteUSB archive as the verified package/source input. The build extracts FreeDOS package ZIPs from the image and verifies that all `65` packages contain corresponding `SOURCE/` entries; `62` nested `SOURCES.ZIP` archives are recorded in `payloads/out/source-provenance/freedos/packages-source-manifest.tsv`. The staged FAT16 image is assembled from source-built FreeDOS kernel, FreeCOM, SYS, and boot sector artifacts, with a pinned OpenWatcom v2 toolchain recorded in `payloads/out/source-provenance/toolchains/openwatcom/OPENWATCOM_TOOLCHAIN_USED.txt`. UEFI:NTFS is built from pinned upstream source. wimlib and 7-Zip-JBinding are staged as Android NDK r29 native libraries from pinned upstream build paths. 7-Zip-JBinding excludes RAR/unRAR native sources before compilation. No payload is taken from any opaque APK.
 
 ## Device Write Test
 
@@ -180,9 +179,9 @@ Wireless-ADB test on Samsung Z Flip `SM-F766N`, Android `16`/API `36`:
 - Dark-mode screenshot capture: passed
 - USB scan: detected `USB SanDisk 3.2Gen1`
 - USB permission: granted after retry
-- Destructive packaged FreeDOS LiteUSB write to the SanDisk drive: passed
+- Destructive packaged FreeDOS write to the SanDisk drive: passed
 - PC-side check after write: previous USB contents/partition information were replaced
-- PC-side check after write: drive presented as FreeDOS LiteUSB media
+- PC-side check after write: drive presented as FreeDOS media
 - Read-only boot media inspection:
   - MBR signature `55 AA`
   - Partition 1 `0x04`, bootable, start LBA `63`, `65457` sectors

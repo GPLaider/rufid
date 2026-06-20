@@ -11,6 +11,7 @@ Rufid has an active F-Droid submission path.
 - Active merge request: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/40885`
 - Review notes: `FDROID.md`
 - Payload provenance: `PAYLOAD_SUPPLY_CHAIN.md`
+- Source-build policy: `FDROID_SOURCE_BUILD_POLICY.md`
 - Asset provenance: `ASSET_PROVENANCE.md`
 
 ## Prepared
@@ -27,8 +28,10 @@ Rufid has an active F-Droid submission path.
 1. Keep `commit: v0.1.0` unless F-Droid asks for an exact commit hash.
 2. Rebase the fdroiddata branch if GitLab marks the MR as needing rebase.
 3. Verify the F-Droid buildserver package list when payload script dependencies change.
-4. Keep FreeDOS package-source audit, UEFI:NTFS, wimlib, and 7-Zip-JBinding RAR/unRAR-exclusion provenance current.
+4. Keep FreeDOS package-source audit/source-build manifest, UEFI:NTFS, wimlib, and 7-Zip-JBinding RAR/unRAR-exclusion provenance current.
 5. Leave MR comments only for meaningful updates or reviewer requests.
+
+FreeDOS is now presented as a source-built F-Droid payload: the build uses the official FreeDOS archive as package/source input, builds the selected FreeDOS artifacts, and assembles the packaged FAT16 image from those outputs.
 
 ## Local Preflight
 
@@ -37,14 +40,14 @@ export ANDROID_NDK_HOME=/opt/android/android-ndk-r29
 export ANDROID_HOME=/opt/android/sdk
 export ANDROID_SDK_ROOT=/opt/android/sdk
 bash ./scripts/fdroid/stage-source-payloads.sh
-../../work/tools/gradle-8.9/bin/gradle :app:assembleRelease
-shellcheck -x -P scripts/payloads scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*.sh
+gradle --no-daemon :app:assembleRelease
+shellcheck -x -S warning scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*.sh
 ```
 
 Android verification:
 
 ```powershell
-..\..\work\tools\gradle-8.9\bin\gradle.bat :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+gradle --no-daemon :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
 ```
 
 ## Useful Official References

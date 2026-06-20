@@ -5,6 +5,7 @@ local.properties
 __pycache__/
 *.pyc
 app/build/
+build/
 payloads/build/
 payloads/out/
 payloads/sources/

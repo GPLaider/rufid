@@ -29,8 +29,8 @@ Do not add Rufus, UEFI:NTFS, FreeDOS, wimlib, libusb, 7-Zip/JBinding, or EtchDro
 Optional payload supply-chain scripts have been added and local payload outputs have been built/staged. F-Droid metadata stages the audited payload set during its build:
 
 - UEFI:NTFS: pinned upstream source build path in `scripts/payloads/build-uefi-ntfs.sh`
-- FreeDOS: official FreeDOS 1.4 LiteUSB archive with SHA-256 verification and package-source audit in `scripts/payloads/build-freedos.sh`
+- FreeDOS: official FreeDOS 1.4 LiteUSB archive used as verified package/source input; kernel, FreeCOM, SYS, boot sector, and final FAT16 image are staged by `scripts/payloads/build-freedos-from-source.sh`
 - wimlib: pinned upstream Android NDK build path in `scripts/payloads/build-wimlib-android.sh`
 - 7-Zip-JBinding: pinned upstream Android build staging path in `scripts/payloads/build-sevenzipjbinding-android.sh`; RAR/unRAR native sources are removed from the CMake input before building.
 
-See `PAYLOAD_SUPPLY_CHAIN.md` and `payloads/payloads.lock` before enabling `--project-prop=rufid.includePayloads=true`.
+See `PAYLOAD_SUPPLY_CHAIN.md` and `payloads/payloads.lock` before changing payload staging.

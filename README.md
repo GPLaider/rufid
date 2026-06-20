@@ -35,7 +35,7 @@ Captured from a Samsung Z Flip test device in dark mode.
 - Android USB host mass-storage scan, chooser, permission request, and diagnostics.
 - Raw ISO/IMG writing to the selected USB target.
 - Manual verification against the selected image.
-- Packaged FreeDOS LiteUSB write mode.
+- Packaged source-built FreeDOS write mode.
 - Direct URL-to-USB streaming mode.
 - `or select current ISO` picker with Windows, Ubuntu, Fedora, Debian, Linux Mint, Arch Linux, and openSUSE entries.
 - Whole-device backup to an Android document.
@@ -70,7 +70,7 @@ Release and F-Droid builds package the staged payload set by default.
 
 Current staged payload set:
 
-- FreeDOS LiteUSB image and archive from the official FreeDOS 1.4 distribution archive, with package-source audit.
+- FreeDOS FAT16 image and archive assembled from source-built FreeDOS kernel, FreeCOM, SYS, and boot sector artifacts. The official FreeDOS 1.4 LiteUSB archive is used only as the verified package/source input.
 - UEFI:NTFS from pinned upstream source.
 - wimlib Android native libraries for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`.
 - 7-Zip-JBinding Android native libraries for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`, with RAR/unRAR native sources excluded.
@@ -84,25 +84,25 @@ The local build setup uses Android SDK/ADB and Gradle 8.9 under the surrounding 
 Full Android verification:
 
 ```powershell
-..\..\work\tools\gradle-8.9\bin\gradle.bat :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+gradle --no-daemon :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
 ```
 
 F-Droid-style payload staging:
 
 ```bash
 ./scripts/fdroid/stage-source-payloads.sh
-../../work/tools/gradle-8.9/bin/gradle :app:assembleRelease
+gradle --no-daemon :app:assembleRelease
 ```
 
 Source-only developer smoke check:
 
 ```powershell
-..\..\work\tools\gradle-8.9\bin\gradle.bat --project-prop=rufid.includePayloads=false :app:assembleDebug
+gradle --no-daemon --project-prop=rufid.includePayloads=false :app:assembleDebug
 ```
 
 ## Device Write Test
 
-The current local audit installed and launched Rufid on a Samsung Z Flip `SM-F766N`, Android `16`/API `36`, through wireless ADB. Rufid detected a `USB SanDisk 3.2Gen1` drive with `57.3 GiB` capacity, wrote the packaged FreeDOS LiteUSB image to it, and the drive was then checked on a PC. The previous USB contents/partition information were replaced and the drive presented as FreeDOS LiteUSB media. Rufid's read-only inspection also detected FAT16/FreeDOS evidence: `FRDOS5.1`, volume label `FD14-LITE`, boot signature `55 AA`, and a bootable partition.
+The current local audit installed and launched Rufid on a Samsung Z Flip `SM-F766N`, Android `16`/API `36`, through wireless ADB. Rufid detected a `USB SanDisk 3.2Gen1` drive with `57.3 GiB` capacity, wrote the packaged FreeDOS image to it, and the drive was then checked on a PC. The previous USB contents/partition information were replaced and the drive presented as FreeDOS media. Rufid's read-only inspection also detected FAT16/FreeDOS evidence: `FRDOS5.1`, volume label `FD14-LITE`, boot signature `55 AA`, and a bootable partition.
 
 The same SanDisk drive was then recovered from FreeDOS media into one MBR exFAT volume from Rufid on the Z Flip. Rufid verified the MBR, exFAT main boot sector, checksum sector, and backup boot sector, then read-only inspection reported `OEM: EXFAT`, volume label `SANDISK 32G`, and file system `exFAT`.
 

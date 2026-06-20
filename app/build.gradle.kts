@@ -36,6 +36,10 @@ android {
         }
     }
 
+    lint {
+        checkTestSources = false
+    }
+
     sourceSets {
         getByName("main") {
             if (includePayloads.get()) {

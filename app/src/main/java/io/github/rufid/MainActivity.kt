@@ -628,7 +628,7 @@ class MainActivity : Activity() {
         val message = when (mode) {
             BootMode.Image -> "Boot selection: disk or ISO image."
             BootMode.Url -> "Boot selection: direct download URL."
-            BootMode.FreeDos -> "Boot selection: packaged FreeDOS LiteUSB."
+            BootMode.FreeDos -> "Boot selection: packaged FreeDOS boot image."
         }
         setStatus(message)
     }
@@ -637,7 +637,7 @@ class MainActivity : Activity() {
         val modeLabel = when (bootMode) {
             BootMode.Image -> "Disk or ISO image"
             BootMode.Url -> "Direct download image"
-            BootMode.FreeDos -> "FreeDOS LiteUSB"
+            BootMode.FreeDos -> "FreeDOS"
         }
         bootModeText.text = modeLabel
         if (::urlRow.isInitialized) {
@@ -670,9 +670,9 @@ class MainActivity : Activity() {
                 val size = readPackagedAssetSize(FREEDOS_IMAGE_SIZE_ASSET)
                 val packaged = PayloadCatalog.isPackaged(this, "freedos-image")
                 if (packaged && size != null) {
-                    "Packaged FreeDOS LiteUSB image\n${ByteFormatter.format(size)} - ${FREEDOS_IMAGE_ASSET}"
+                    "Packaged source-built FreeDOS image\n${ByteFormatter.format(size)} - ${FREEDOS_IMAGE_ASSET}"
                 } else {
-                    "FreeDOS LiteUSB image is not packaged in this APK."
+                    "FreeDOS boot image is not packaged in this APK."
                 }
             }
         }
@@ -1325,7 +1325,7 @@ class MainActivity : Activity() {
 
         AlertDialog.Builder(this)
             .setTitle("Erase and create FreeDOS USB?")
-            .setMessage("This will overwrite ${device.label} with the packaged FreeDOS LiteUSB image (${ByteFormatter.format(imageSize)}).")
+            .setMessage("This will overwrite ${device.label} with the packaged source-built FreeDOS image (${ByteFormatter.format(imageSize)}).")
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Write FreeDOS") { _, _ ->
                 safeAction("Write FreeDOS USB") { writeFreeDosImage(device, imageSize) }
@@ -1336,7 +1336,7 @@ class MainActivity : Activity() {
     private fun writeFreeDosImage(device: UsbMassStorageDevice, imageSize: Long) {
         runIo("Writing FreeDOS USB") { token ->
             UsbDeviceOpener.open(device).useBlockDevice { blockDevice ->
-                WritePlan("FreeDOS LiteUSB", imageSize, device.label, blockDevice.sizeBytes).validate()
+                WritePlan("FreeDOS", imageSize, device.label, blockDevice.sizeBytes).validate()
                 assets.open(FREEDOS_IMAGE_ASSET).use { input ->
                     RawImageWriter(blockDevice).write(
                         image = input,

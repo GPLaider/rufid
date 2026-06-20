@@ -7,20 +7,20 @@ Target scope: clean implementation of Android boot-media writer workflows, with 
 ## Built Artifacts
 
 - Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
-- Debug SHA-256: `D06EEF11CF7F0C15371C9D1803C6347E145C65F1975B117761682995F67A9270`
-- Debug size: `47466753` bytes
+- Debug SHA-256: `149ed082a07509fd340f15667755046db686f372323499ee4cab55ee57129f51`
+- Debug size: `12311462` bytes
 - F-Droid payload release candidate: `app/build/outputs/apk/release/app-release-unsigned.apk`
-- Release SHA-256: `B93EAAD675E3DD56FA2BDCF23064698EACE723C85427421C898CA340B8522C15`
-- Release size: `46344449` bytes
+- Release SHA-256: `e4f73bc12103ab4dad24eb1d821930d970e8b351c34438292c5b2b2bfcfa9451`
+- Release size: `11882897` bytes
 
 Build commands verified:
 
 ```powershell
-..\..\work\tools\gradle-8.9\bin\gradle.bat :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+gradle --no-daemon :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
 ```
 
 ```bash
-shellcheck -x -P scripts/payloads scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*.sh
+shellcheck -x -S warning scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*.sh
 ```
 
 Build result:
@@ -31,7 +31,6 @@ Build result:
 - `:app:testDebugUnitTest` passed: 20 tests, 0 failures
 - `:app:lintDebug` passed: `No issues found.`
 - Debug/release APK content check: staged payload/native entries `18`; `META-INF/version-control-info.textproto` absent.
-- `--project-prop=rufid.includePayloads=false :app:assembleDebug` passed as a source-only smoke check
 - WSL Arch `shellcheck` passed for payload, F-Droid, and WSL scripts
 
 ## Completed
@@ -44,7 +43,7 @@ Build result:
 - Added visible boot source mode selection: `ISO / IMG`, `URL`, and `FreeDOS`.
 - Added URL mode with `or select current ISO` below the direct URL field.
 - Added seven official OS entries: Windows, Ubuntu, Fedora, Debian, Linux Mint, Arch Linux, and openSUSE.
-- Added packaged FreeDOS write path using `assets/payloads/dos/freedos.img`.
+- Added packaged source-built FreeDOS write path using `assets/payloads/dos/freedos.img`.
 - Added read-only boot media inspection for MBR/FAT/FreeDOS evidence.
 - Added guarded USB recovery/reinitialize flow: quick metadata wipe, one MBR FAT32 or exFAT partition, format, and read-back metadata verification.
 - Added recovery plan confirmation requiring the user to type `R`, with legacy `REINITIALIZE` still accepted.
@@ -57,7 +56,7 @@ Build result:
 - Added local last-error reporting and safe UI action wrappers without external crash SDKs.
 - Added deterministic artwork pipeline and Android/Fastlane/repository assets.
 - Added F-Droid metadata and source-staged payload scripts for FreeDOS, UEFI:NTFS, wimlib, and 7-Zip-JBinding.
-- Added FreeDOS package-source audit: the build verifies `65/65` FreeDOS package ZIPs contain `SOURCE/` entries before packaging the LiteUSB payload.
+- Added FreeDOS package-source audit and source-build path: the build verifies `65/65` FreeDOS package ZIPs contain `SOURCE/` entries, expands `62` nested `SOURCES.ZIP` archives, builds FreeDOS kernel/FreeCOM/SYS/boot artifacts, and assembles the packaged FAT16 image from those outputs.
 - Excluded RAR/unRAR native source files from the 7-Zip-JBinding Android CMake input.
 
 ## Payload Status
@@ -80,13 +79,14 @@ The current release candidate includes:
 The FreeDOS build also writes non-APK audit files under `payloads/out/source-provenance/freedos/`:
 
 - `FREEDOS_SOURCE_AUDIT.txt`
+- `FREEDOS_SOURCE_BUILD.txt`
 - `packages-source-manifest.tsv`
 - extracted package `SOURCE/` tree
 
 Current staged payload hashes:
 
-- `freedos.img`: `f539d456b792594bc3ca59d4e0f4c23d4f1fee73370c1390b2da245400718d36`
-- `freedos.7z`: `cf31fd2c2d4c775c505c312271e48aaa0620dec6a25b5a45785904a049f9228e`
+- `freedos.img`: `88ea18d67f25214428179530a1c2aa8709a3a02cb7ef26912909781620f02f3d`
+- `freedos.7z`: `b51b5f4b462f895e3eb23bc906a18d42cdca9ee76de163ebdee6ef9f8c724c84`
 - `uefi-ntfs.img`: `90ef88628ab417801472b1f563aab939afafb74e495f0787511068634f87713e`
 
 ## Device Write Test
@@ -117,9 +117,9 @@ Read-only boot media inspection result:
 Destructive FreeDOS write result:
 
 - Target: `USB SanDisk 3.2Gen1`
-- Action: packaged FreeDOS LiteUSB image write from Rufid
+- Action: packaged FreeDOS image write from Rufid
 - PC-side result: previous USB contents/partition information were replaced
-- PC-side result: the drive presented as FreeDOS LiteUSB media
+- PC-side result: the drive presented as FreeDOS media
 - Rufid read-only reinspection after the write found FAT16/FreeDOS evidence listed above
 
 Real-device exFAT recovery/reinitialize result:

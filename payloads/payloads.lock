@@ -23,6 +23,10 @@ FREEDOS_LITEUSB_URL=https://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/dis
 FREEDOS_LITEUSB_SHA256=857dcd2ebf9d3d094320154db5fb5b830acba6fb98f981a95a0ca7ab3350338b
 FREEDOS_LITEUSB_INNER=FD14LITE.img
 
+OPENWATCOM_REPO=https://github.com/open-watcom/open-watcom-v2.git
+OPENWATCOM_REF=ec15f83f62ac025b0be76d34d608f18a6c59da20
+OPENWATCOM_TAG=2026-06-01-Build
+
 BUILDROOT_VERSION=2026.05
 BUILDROOT_URL=https://buildroot.org/downloads/buildroot-2026.05.tar.xz
 BUILDROOT_SHA256=9d2f3af10fcac763a61ff6e41894a033f9ecf9267ba13dd0912eedcd3be2b22a
