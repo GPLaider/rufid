@@ -159,6 +159,20 @@ if [[ ! -f "$kernel_src/makefile" || ! -f "$freecom_src/makefile" ]]; then
   exit 1
 fi
 
+python3 - "$kernel_src/sys/makefile" <<'PY'
+from pathlib import Path
+import sys
+
+makefile = Path(sys.argv[1])
+data = makefile.read_bytes()
+needle = b"$(CL) $(CFLAGST) $(TINY) $(SYS_EXE_dependencies)"
+replacement = b"$(CL) $(CFLAGST) $(TINY) -fe=sys.com $(SYS_EXE_dependencies)"
+if replacement not in data:
+    if needle not in data:
+        raise SystemExit(f"FreeDOS sys makefile did not contain expected link command: {makefile}")
+    makefile.write_bytes(data.replace(needle, replacement, 1))
+PY
+
 (
   cd "$kernel_src"
   export BUILDENV=linux
