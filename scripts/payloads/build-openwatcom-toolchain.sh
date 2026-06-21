@@ -38,7 +38,22 @@ if ! has_openwatcom_component_build; then
     export OWDOCBUILD=0
     export OWDISTRBUILD=0
     export OWOBJDIR="${RUFID_OPENWATCOM_OBJDIR:-binbuild}"
-    ./build.sh "${RUFID_OPENWATCOM_BUILD_TARGET:-build}"
+    # build.sh only loads cmnvars.sh when OWROOT is unset. Rufid sets OWROOT
+    # explicitly to keep the source tree pinned, so load the version/toolchain
+    # variables here before invoking the OpenWatcom bootstrap.
+    # shellcheck disable=SC1091
+    . ./cmnvars.sh
+    build_rc=0
+    ./build.sh "${RUFID_OPENWATCOM_BUILD_TARGET:-build}" || build_rc=$?
+    if (( build_rc != 0 )) && ! has_openwatcom_component_build; then
+      if [[ -f "$src_dir/build/$OWOBJDIR/bootx.log" ]]; then
+        tail -200 "$src_dir/build/$OWOBJDIR/bootx.log" >&2
+      fi
+      if [[ -f "$src_dir/build/$OWOBJDIR/boot.log" ]]; then
+        tail -200 "$src_dir/build/$OWOBJDIR/boot.log" >&2
+      fi
+      exit "$build_rc"
+    fi
   )
 fi
 
