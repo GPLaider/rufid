@@ -16,7 +16,7 @@ FreeDOS uses the official FreeDOS 1.4 LiteUSB archive only as the verified packa
 
 Before submission:
 
-1. Keep `commit: v0.1.0` unless F-Droid review requests an exact full commit hash.
+1. Keep `commit: v0.1.1` unless F-Droid review requests an exact full commit hash.
 2. Confirm the buildserver package list in `metadata/io.github.rufid.yml`.
 3. Keep the FreeDOS package-source audit and source-build notes current if the upstream FreeDOS distribution changes.
 4. Keep the phone screenshots and Fastlane text aligned with the current UI.

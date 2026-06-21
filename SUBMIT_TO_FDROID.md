@@ -6,7 +6,7 @@ Rufid has an active F-Droid submission path.
 
 - App ID: `io.github.rufid`
 - Upstream repository: `https://github.com/GPLaider/rufid`
-- Upstream tag: `v0.1.0`
+- Upstream tag: `v0.1.1`
 - F-Droid metadata in this repo: `metadata/io.github.rufid.yml`
 - Active merge request: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/40885`
 - Review notes: `FDROID.md`
@@ -25,7 +25,7 @@ Rufid has an active F-Droid submission path.
 
 ## Before Reviewer Handoff
 
-1. Keep `commit: v0.1.0` unless F-Droid asks for an exact commit hash.
+1. Keep `commit: v0.1.1` unless F-Droid asks for an exact commit hash.
 2. Rebase the fdroiddata branch if GitLab marks the MR as needing rebase.
 3. Verify the F-Droid buildserver package list when payload script dependencies change.
 4. Keep FreeDOS package-source audit/source-build manifest, UEFI:NTFS, wimlib, and 7-Zip-JBinding RAR/unRAR-exclusion provenance current.

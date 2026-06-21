@@ -37,7 +37,7 @@ The app:
 - can back up a selected USB device to an Android document
 - can inspect and benchmark USB media using read-only operations
 
-A real packaged FreeDOS write was run during the current local audit on a `USB SanDisk 3.2Gen1` drive. After the write, a PC-side check confirmed that previous USB contents/partition information were replaced and the drive presented as FreeDOS media. The same drive was then recovered from FreeDOS media into one MBR exFAT volume with device-derived label `SANDISK 32G` from Rufid on the Samsung Z Flip. No FAT32 real-device format or fake-capacity destructive test was run.
+A real packaged FreeDOS write was run during the current local audit on a `USB SanDisk 3.2Gen1` drive. After the write, a PC-side check confirmed that previous USB contents/partition information were replaced and the drive presented as FreeDOS media. The same drive was then recovered from FreeDOS media into one MBR exFAT volume from Rufid on the Samsung Z Flip. Rufid 0.1.1 fixes recovery volume-label derivation so USB generation strings such as `3.2Gen1` are not misread as capacity text. No FAT32 real-device format or fake-capacity destructive test was run.
 
 The USB recovery/reinitialize flow is described as metadata quick wipe plus FAT32 or exFAT format. It is not secure erase and not a full-disk wipe.
 
@@ -63,7 +63,7 @@ See [PAYLOAD_SUPPLY_CHAIN.md](PAYLOAD_SUPPLY_CHAIN.md), [payloads/README.md](pay
 ## Review Notes
 
 - The metadata file is `metadata/io.github.rufid.yml`.
-- The current upstream tag is `v0.1.0`.
+- The current upstream tag is `v0.1.1`.
 - The GitLab MR is currently source-submitted; fork pipeline behavior may differ from the final F-Droid buildserver run.
 - F-Droid reviewers should verify the staged payload scripts, payload hashes, FreeDOS package-source audit/source-build manifest, 7-Zip-JBinding RAR/unRAR exclusion, and absence of opaque APK-derived payloads.
 

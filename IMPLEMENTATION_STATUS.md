@@ -1,16 +1,16 @@
 # Rufid Implementation Status
 
-Date: 2026-06-20
+Date: 2026-06-21
 
 Target scope: clean implementation of Android boot-media writer workflows, with a full audited payload path for F-Droid.
 
 ## Built Artifacts
 
 - Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
-- Debug SHA-256: `149ed082a07509fd340f15667755046db686f372323499ee4cab55ee57129f51`
+- Debug SHA-256: `863373d6542248ef6f6449eb86b9e32e1c3351baea6384f5d93735eb8020270d`
 - Debug size: `12311462` bytes
 - F-Droid payload release candidate: `app/build/outputs/apk/release/app-release-unsigned.apk`
-- Release SHA-256: `e4f73bc12103ab4dad24eb1d821930d970e8b351c34438292c5b2b2bfcfa9451`
+- Release SHA-256: `780247f4e6da6efb42b3892a0e97138d6226960cd2658a47896ac804241b111d`
 - Release size: `11882897` bytes
 
 Build commands verified:
@@ -28,7 +28,7 @@ Build result:
 - `BUILD SUCCESSFUL`
 - `:app:assembleDebug` passed with staged payloads by default
 - `:app:assembleRelease` passed for the unsigned F-Droid payload candidate
-- `:app:testDebugUnitTest` passed: 20 tests, 0 failures
+- `:app:testDebugUnitTest` passed: 22 tests, 0 failures
 - `:app:lintDebug` passed: `No issues found.`
 - Debug/release APK content check: staged payload/native entries `18`; `META-INF/version-control-info.textproto` absent.
 - WSL Arch `shellcheck` passed for payload, F-Droid, and WSL scripts
@@ -125,9 +125,9 @@ Destructive FreeDOS write result:
 Real-device exFAT recovery/reinitialize result:
 
 - Target: `USB SanDisk 3.2Gen1`
-- Action: quick metadata wipe, one MBR exFAT partition, device-derived label `SANDISK 32G`
+- Action: quick metadata wipe, one MBR exFAT partition. The 0.1.0 test build derived label `SANDISK 32G` from `USB SanDisk 3.2Gen1`; 0.1.1 fixes this label derivation.
 - Post-write verification: MBR, exFAT main boot sector, checksum sector, and backup boot sector matched
-- Rufid read-only inspection: partition type `0x07`, start LBA `2048`, OEM `EXFAT`, volume label `SANDISK 32G`, file system `exFAT`
+- Rufid read-only inspection: partition type `0x07`, start LBA `2048`, OEM `EXFAT`, volume label `SANDISK 32G` on the 0.1.0 test build, file system `exFAT`
 
 No FAT32 recovery format or fake-capacity destructive test was run on the real USB device.
 

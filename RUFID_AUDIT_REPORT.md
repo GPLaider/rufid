@@ -25,13 +25,13 @@ shellcheck -x -S warning scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*
 ## Build Artifacts
 
 - Package: `io.github.rufid`
-- Version: `0.1.0` / `versionCode=1`
+- Version: `0.1.1` / `versionCode=2`
 - Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
 - Debug size: `12311462` bytes
-- Debug SHA-256: `149ed082a07509fd340f15667755046db686f372323499ee4cab55ee57129f51`
+- Debug SHA-256: `863373d6542248ef6f6449eb86b9e32e1c3351baea6384f5d93735eb8020270d`
 - F-Droid payload release candidate: `app/build/outputs/apk/release/app-release-unsigned.apk`
 - Release size: `11882897` bytes
-- Release SHA-256: `e4f73bc12103ab4dad24eb1d821930d970e8b351c34438292c5b2b2bfcfa9451`
+- Release SHA-256: `780247f4e6da6efb42b3892a0e97138d6226960cd2658a47896ac804241b111d`
 
 The release candidate is unsigned, as expected for local/F-Droid handoff.
 
@@ -39,7 +39,7 @@ The release candidate is unsigned, as expected for local/F-Droid handoff.
 
 - `:app:assembleDebug`: passed
 - `:app:assembleRelease`: passed
-- `:app:testDebugUnitTest`: passed, 20 tests, 0 failures
+- `:app:testDebugUnitTest`: passed, 22 tests, 0 failures
 - `:app:lintDebug`: passed, `No issues found.`
 - Debug/release APK content check: staged payload/native entries `18`; `META-INF/version-control-info.textproto` absent.
 - WSL Arch `shellcheck`: passed for payload, F-Droid, and WSL scripts
@@ -197,14 +197,14 @@ Wireless-ADB exFAT recovery/reinitialize test on the same SanDisk drive:
 - App update to the current local build: passed
 - USB permission after Android 12+ mutable permission `PendingIntent` fix: passed
 - Destructive recovery plan target: `USB SanDisk 3.2Gen1`, VID:PID `0x0781:0x55A9`, capacity `57.3 GiB`
-- Plan: quick metadata wipe, one MBR exFAT partition, device-derived label `SANDISK 32G`
+- Plan: quick metadata wipe, one MBR exFAT partition. The 0.1.0 run derived label `SANDISK 32G` from `USB SanDisk 3.2Gen1`; 0.1.1 fixes this so USB generation strings are not folded into capacity-like label text.
 - Post-write verification: MBR, exFAT main boot sector, checksum sector, and backup boot sector matched
 - Read-only inspection after recovery:
   - Partition 1 `0x07`, bootable, start LBA `2048`, end LBA `120126719`, `57.3 GiB`
   - Boot sector LBA `2048`
   - Boot signature `55 AA`
   - OEM `EXFAT`
-  - Volume label `SANDISK 32G`
+  - Volume label `SANDISK 32G` on the 0.1.0 test build; 0.1.1 label derivation now resolves this device name as `SANDISK`
   - File system `exFAT`
   - Recovery layout `MBR exFAT media detected`
 

@@ -104,7 +104,7 @@ gradle --no-daemon --project-prop=rufid.includePayloads=false :app:assembleDebug
 
 The current local audit installed and launched Rufid on a Samsung Z Flip `SM-F766N`, Android `16`/API `36`, through wireless ADB. Rufid detected a `USB SanDisk 3.2Gen1` drive with `57.3 GiB` capacity, wrote the packaged FreeDOS image to it, and the drive was then checked on a PC. The previous USB contents/partition information were replaced and the drive presented as FreeDOS media. Rufid's read-only inspection also detected FAT16/FreeDOS evidence: `FRDOS5.1`, volume label `FD14-LITE`, boot signature `55 AA`, and a bootable partition.
 
-The same SanDisk drive was then recovered from FreeDOS media into one MBR exFAT volume from Rufid on the Z Flip. Rufid verified the MBR, exFAT main boot sector, checksum sector, and backup boot sector, then read-only inspection reported `OEM: EXFAT`, volume label `SANDISK 32G`, and file system `exFAT`.
+The same SanDisk drive was then recovered from FreeDOS media into one MBR exFAT volume from Rufid on the Z Flip. Rufid verified the MBR, exFAT main boot sector, checksum sector, and backup boot sector, then read-only inspection reported `OEM: EXFAT` and file system `exFAT`. Rufid 0.1.1 fixes recovery volume-label derivation so USB generation strings such as `3.2Gen1` are not misread as capacity text.
 
 See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [RUFID_AUDIT_REPORT.md](RUFID_AUDIT_REPORT.md).
 
@@ -121,13 +121,14 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [RUFID_AUDIT_REPORT
 - [Security policy](SECURITY.md)
 - [Code of conduct](CODE_OF_CONDUCT.md)
 - [Positioning notes](MARKETING.md)
+- [Release notes v0.1.1](release-notes-v0.1.1.md)
 - [Release notes v0.1.0](release-notes-v0.1.0.md)
 
 ## Project Info
 
 - Package: `io.github.rufid`
 - App name: `Rufid`
-- Version: `0.1.0`
+- Version: `0.1.1`
 - Minimum Android SDK: 24
 - Target Android SDK: 35
 - License: `GPL-3.0-or-later`

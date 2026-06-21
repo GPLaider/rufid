@@ -6,12 +6,23 @@ import org.junit.Test
 class RecoveryVolumeLabelTest {
     @Test
     fun derivesLabelFromUsbProductName() {
-        assertEquals("SANDISK 32G", RecoveryVolumeLabel.fromDeviceLabel("USB SanDisk 3.2Gen1"))
+        assertEquals("SANDISK", RecoveryVolumeLabel.fromDeviceLabel("USB SanDisk 3.2Gen1"))
     }
 
     @Test
     fun keepsMeaningfulNonGenericDeviceName() {
         assertEquals("KINGSTON DA", RecoveryVolumeLabel.fromDeviceLabel("Kingston DataTraveler 3.0"))
+    }
+
+    @Test
+    fun removesUsbGenerationWithoutInventingCapacity() {
+        assertEquals("SANDISK", RecoveryVolumeLabel.fromDeviceLabel("USB SanDisk 3.2 Gen 1"))
+        assertEquals("SANDISK", RecoveryVolumeLabel.fromDeviceLabel("SanDisk USB 3.0"))
+    }
+
+    @Test
+    fun preservesDeviceNameOrderWithoutBrandGuessing() {
+        assertEquals("JETFLASH TR", RecoveryVolumeLabel.fromDeviceLabel("JetFlash Transcend 3.1"))
     }
 
     @Test
