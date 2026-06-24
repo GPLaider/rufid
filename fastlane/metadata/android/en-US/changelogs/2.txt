@@ -1,6 +1,6 @@
-Hotfix release:
+F-Droid review build polish:
 
-- Fix recovery volume-label derivation from USB 3.x device names
-- Prevent labels such as `SANDISK 32G` from being created from `SanDisk 3.2Gen1`
-- Keep USB capacity reporting separate from volume-label sanitization
-- No payload, build-system, permission, ad, analytics, billing, or crash SDK changes
+- Fixes recovery volume-label derivation from USB 3.x device names
+- Prevents labels such as SANDISK 32G from being created from SanDisk 3.2Gen1
+- Keeps USB capacity reporting separate from volume-label sanitization
+- Keeps payloads, permissions, ads, analytics, billing, and crash SDK status unchanged
