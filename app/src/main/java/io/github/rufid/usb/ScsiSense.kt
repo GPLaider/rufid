@@ -31,6 +31,7 @@ data class ScsiSense(
             0x20 to 0x00 -> "invalid command"
             0x21 to 0x00 -> "logical block address out of range"
             0x24 to 0x00 -> "invalid field in command"
+            0x26 to 0x00 -> "invalid field in parameter list"
             0x27 to 0x00 -> "write protected"
             0x28 to 0x00 -> "media changed"
             0x29 to 0x00 -> "device reset"
@@ -50,9 +51,9 @@ data class ScsiSense(
 }
 
 class ScsiCommandException(
-    commandName: String,
-    status: Int,
-    residue: Int,
+    val commandName: String,
+    val status: Int,
+    val residue: Int,
     val sense: ScsiSense?,
 ) : IOException(
     buildString {
@@ -62,5 +63,21 @@ class ScsiCommandException(
         }
     },
 )
+
+internal fun ScsiCommandException.isUnsupportedSynchronizeCache(): Boolean =
+    commandName.startsWith("SYNCHRONIZE CACHE") && sense?.isUnsupportedOrInvalidRequest() == true
+
+internal fun ScsiCommandException.usbWriteFailureMessage(byteOffset: Long, lba: Long, blocks: Int): String =
+    "USB data write failed at byte offset $byteOffset (LBA $lba, blocks $blocks): $message"
+
+internal fun ScsiCommandException.usbFlushFailureMessage(byteOffset: Long): String =
+    "USB final cache sync failed after byte offset $byteOffset: $message"
+
+private fun ScsiSense.isUnsupportedOrInvalidRequest(): Boolean {
+    if (senseKey != 0x05) return false
+    return (additionalSenseCode == 0x20 && additionalSenseQualifier == 0x00) ||
+        (additionalSenseCode == 0x24 && additionalSenseQualifier == 0x00) ||
+        (additionalSenseCode == 0x26 && additionalSenseQualifier == 0x00)
+}
 
 private fun Int.toHex2(): String = toString(16).uppercase().padStart(2, '0')

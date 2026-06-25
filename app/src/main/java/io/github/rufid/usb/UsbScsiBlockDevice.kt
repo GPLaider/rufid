@@ -68,13 +68,22 @@ class UsbScsiBlockDevice(
         if (length == 0) return
         val blocks = length / blockSize
         val lba = currentLba()
-        transport.command(writeCommand(lba, blocks), buffer, length, dataIn = false)
+        try {
+            transport.command(writeCommand(lba, blocks), buffer, length, dataIn = false)
+        } catch (error: ScsiCommandException) {
+            throw IOException(error.usbWriteFailureMessage(positionBytes, lba, blocks), error)
+        }
         positionBytes += length
     }
 
     override fun flush() {
         val command = if (use16ByteCommands) Scsi.synchronizeCache16() else Scsi.synchronizeCache10()
-        transport.command(command, null, 0, dataIn = false)
+        try {
+            transport.command(command, null, 0, dataIn = false)
+        } catch (error: ScsiCommandException) {
+            if (error.isUnsupportedSynchronizeCache()) return
+            throw IOException(error.usbFlushFailureMessage(positionBytes), error)
+        }
     }
 
     override fun close() {
