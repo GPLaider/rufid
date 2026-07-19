@@ -1,0 +1,8 @@
+Create Windows installer media as FAT32, NTFS MBR, or NTFS GPT.
+Split install.wim over 4 GiB for FAT32 using source-built wimlib.
+Add ISO9660/UDF extraction, path validation, progress, cancellation, and partial-failure cleanup.
+Add source-built NTFS-3G and UEFI:NTFS layouts.
+Harden USB BOT reset, halt clearing, CSW residue checks, and ambiguous-write handling.
+Pin the 7-Zip-JBinding source build to the release Gradle toolchain.
+
+Virtual QEMU/OVMF boot validation is complete. Physical USB and PC firmware compatibility remains device-specific.

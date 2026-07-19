@@ -65,7 +65,7 @@ See [PAYLOAD_SUPPLY_CHAIN.md](PAYLOAD_SUPPLY_CHAIN.md), [payloads/README.md](pay
 ## Review Notes
 
 - The metadata file is `metadata/io.github.rufid.yml`.
-- The current upstream tag is `v0.2.0`.
+- The current upstream tag is `v0.2.1`.
 - The GitLab MR was merged; future F-Droid updates should track tagged upstream releases.
 - F-Droid reviewers should verify the staged payload scripts, payload hashes, FreeDOS package-source audit/source-build manifest, 7-Zip-JBinding RAR/unRAR exclusion, and absence of opaque APK-derived payloads.
 

@@ -6,7 +6,7 @@ Rufid is published on F-Droid and should keep its upstream metadata aligned with
 
 - App ID: `io.github.rufid`
 - Upstream repository: `https://github.com/GPLaider/rufid`
-- Upstream tag: `v0.2.0`
+- Upstream tag: `v0.2.1`
 - F-Droid metadata in this repo: `metadata/io.github.rufid.yml`
 - F-Droid package: `https://f-droid.org/packages/io.github.rufid/`
 - Inclusion merge request: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/40885` (merged)

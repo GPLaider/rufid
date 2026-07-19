@@ -124,7 +124,7 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [RUFID_AUDIT_REPORT
 - [Code of conduct](CODE_OF_CONDUCT.md)
 - [Positioning notes](MARKETING.md)
 - [Virtual Windows boot validation](docs/VIRTUAL_BOOT_VALIDATION.md)
-- [Release notes v0.2.0](release-notes-v0.2.0.md)
+- [Release notes v0.2.1](release-notes-v0.2.1.md)
 - [Release notes v0.1.2](release-notes-v0.1.2.md)
 - [Release notes v0.1.1](release-notes-v0.1.1.md)
 - [Release notes v0.1.0](release-notes-v0.1.0.md)
@@ -133,7 +133,7 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [RUFID_AUDIT_REPORT
 
 - Package: `io.github.rufid`
 - App name: `Rufid`
-- Version: `0.2.0`
+- Version: `0.2.1`
 - Minimum Android SDK: 24
 - Target Android SDK: 35
 - License: `GPL-3.0-or-later`

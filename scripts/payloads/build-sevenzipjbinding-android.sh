@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
 need git
+need gradle
 
 sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android/sdk}}"
 if [[ ! -d "$sdk_root/platforms/android-35" || ! -x "$sdk_root/build-tools/35.0.0/aapt" ]]; then
@@ -42,6 +43,16 @@ sdk.dir=$sdk_root
 ndk.dir=$ANDROID_NDK_HOME
 EOF
 
+root_gradle_file="$src/build.gradle"
+upstream_agp="classpath 'com.android.tools.build:gradle:8.11.2'"
+target_agp="classpath 'com.android.tools.build:gradle:8.7.3'"
+if grep -Fq "$upstream_agp" "$root_gradle_file"; then
+  sed -i "s/$upstream_agp/$target_agp/" "$root_gradle_file"
+elif ! grep -Fq "$target_agp" "$root_gradle_file"; then
+  echo "Unexpected 7-Zip-JBinding Android Gradle plugin declaration." >&2
+  exit 1
+fi
+
 gradle_file="$src/sevenzipjbinding/build.gradle"
 sed -i 's/compileSdkVersion 36/compileSdkVersion 35/' "$gradle_file"
 sed -i 's/targetSdkVersion 36/targetSdkVersion 35/' "$gradle_file"
@@ -75,9 +86,7 @@ fi
 export ANDROID_HOME="$sdk_root"
 export ANDROID_SDK_ROOT="$sdk_root"
 
-if [[ -x "$src/gradlew" ]]; then
-  (cd "$src" && ./gradlew :sevenzipjbinding:assembleRelease)
-elif [[ -f "$src/build.gradle" || -f "$src/build.gradle.kts" ]]; then
+if [[ -f "$src/build.gradle" || -f "$src/build.gradle.kts" ]]; then
   (cd "$src" && gradle :sevenzipjbinding:assembleRelease)
 else
   echo "No Gradle build found for $src. Inspect upstream build files and update this script." >&2
