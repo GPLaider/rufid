@@ -12,9 +12,9 @@ RepoType: git
 Repo: https://github.com/GPLaider/rufid.git
 
 Builds:
-  - versionName: 0.2.0
-    versionCode: 4
-    commit: e1987355a6d7e3f523dd1546e1fff7051c2bae97
+  - versionName: 0.2.1
+    versionCode: 5
+    commit: 4dec3abc317b27649e4ed4e5601e6b8530b48339
     subdir: app
     sudo:
       - apt-get update
@@ -46,5 +46,5 @@ MaintainerNotes: |-
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[\d.]+$
-CurrentVersion: 0.2.0
-CurrentVersionCode: 4
+CurrentVersion: 0.2.1
+CurrentVersionCode: 5
