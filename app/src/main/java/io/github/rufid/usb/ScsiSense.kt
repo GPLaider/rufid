@@ -53,7 +53,8 @@ data class ScsiSense(
 class ScsiCommandException(
     val commandName: String,
     val status: Int,
-    val residue: Int,
+    /** CSW dCSWDataResidue as unsigned 32-bit (0..0xFFFFFFFF). */
+    val residue: Long,
     val sense: ScsiSense?,
 ) : IOException(
     buildString {
@@ -69,6 +70,25 @@ internal fun ScsiCommandException.isUnsupportedSynchronizeCache(): Boolean =
 
 internal fun ScsiCommandException.usbWriteFailureMessage(byteOffset: Long, lba: Long, blocks: Int): String =
     "USB data write failed at byte offset $byteOffset (LBA $lba, blocks $blocks): $message"
+
+/**
+ * Message for WRITE failures where CSW may have been lost after DATA OUT.
+ * Callers must not re-issue the same WRITE; completion is unknown until media is verified.
+ */
+internal fun formatUsbWriteUnknownCompletionMessage(
+    byteOffset: Long,
+    lba: Long,
+    blocks: Int,
+    cause: Throwable,
+): String {
+    val detail = if (cause is ScsiCommandException) {
+        cause.usbWriteFailureMessage(byteOffset, lba, blocks)
+    } else {
+        "USB data write failed at byte offset $byteOffset (LBA $lba, blocks $blocks): " +
+            (cause.message ?: cause.toString())
+    }
+    return "$detail Completion is unknown; verify media before retrying."
+}
 
 internal fun ScsiCommandException.usbFlushFailureMessage(byteOffset: Long): String =
     "USB final cache sync failed after byte offset $byteOffset: $message"
