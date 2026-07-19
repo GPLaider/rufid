@@ -44,7 +44,9 @@ Captured from a Samsung Z Flip test device in dark mode.
 - ZIP extraction to a selected Android folder.
 - USB recovery/reinitialize flow: quick metadata wipe, one MBR FAT32 or exFAT partition, format, and post-write metadata verification.
 - FAT32 and exFAT layout/formatter foundations and partition plan preview.
-- Windows ISO helper planning, UEFI:NTFS payload staging, wimlib staging, and 7-Zip-JBinding staging.
+- Windows installer ISO extraction to a FAT32 UEFI layout, including source-built wimlib splitting for `install.wim` files larger than 4 GiB.
+- ZIP and source-built 7-Zip-JBinding archive extraction to a selected Android folder.
+- Windows installer ISO extraction to NTFS data volumes with MBR or GPT UEFI:NTFS helper layouts. The virtual boot gate reached Windows Setup under QEMU/OVMF, including enforced Secure Boot controls; physical-PC Secure Boot compatibility is not currently claimed.
 - Local last-error report with no network crash upload.
 - System light/dark mode UI.
 
@@ -72,7 +74,7 @@ Current staged payload set:
 
 - FreeDOS FAT16 image and archive assembled from source-built FreeDOS kernel, FreeCOM, SYS, and boot sector artifacts. The official FreeDOS 1.4 LiteUSB archive is used only as the verified package/source input.
 - UEFI:NTFS from pinned upstream source.
-- wimlib Android native libraries for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`.
+- wimlib Android native libraries and the Rufid WIM JNI bridge for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`.
 - 7-Zip-JBinding Android native libraries for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`, with RAR/unRAR native sources excluded.
 
 See [PAYLOAD_SUPPLY_CHAIN.md](PAYLOAD_SUPPLY_CHAIN.md), [payloads/README.md](payloads/README.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
@@ -121,6 +123,9 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [RUFID_AUDIT_REPORT
 - [Security policy](SECURITY.md)
 - [Code of conduct](CODE_OF_CONDUCT.md)
 - [Positioning notes](MARKETING.md)
+- [Virtual Windows boot validation](docs/VIRTUAL_BOOT_VALIDATION.md)
+- [Release notes v0.2.0](release-notes-v0.2.0.md)
+- [Release notes v0.1.2](release-notes-v0.1.2.md)
 - [Release notes v0.1.1](release-notes-v0.1.1.md)
 - [Release notes v0.1.0](release-notes-v0.1.0.md)
 
@@ -128,7 +133,7 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [RUFID_AUDIT_REPORT
 
 - Package: `io.github.rufid`
 - App name: `Rufid`
-- Version: `0.1.1`
+- Version: `0.2.0`
 - Minimum Android SDK: 24
 - Target Android SDK: 35
 - License: `GPL-3.0-or-later`

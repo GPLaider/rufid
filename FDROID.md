@@ -11,7 +11,8 @@ Rufid is prepared for F-Droid review.
 - Build system: Gradle / Kotlin
 - Source license: GPL-3.0-or-later
 - Upstream repository: `https://github.com/GPLaider/rufid`
-- Active merge request: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/40885`
+- F-Droid package: `https://f-droid.org/packages/io.github.rufid/`
+- F-Droid inclusion merge request: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/40885` (merged)
 
 ## Privacy And Network
 
@@ -51,7 +52,8 @@ Current F-Droid payload set:
 
 - FreeDOS minimal FAT16 image assembled from source-built FreeDOS kernel, FreeCOM, SYS, and boot sector artifacts.
 - UEFI:NTFS from pinned upstream source.
-- wimlib Android native libraries from pinned upstream source.
+- wimlib Android native libraries from pinned upstream source plus the Rufid WIM JNI bridge.
+- NTFS-3G `mkntfs` + Rufid stream tool from pinned upstream tag `2026.7.7` (no FUSE; needs host `libgcrypt20-dev` / `libgpg-error-dev` only for `autogen`/`AM_PATH_LIBGCRYPT`).
 - 7-Zip-JBinding Android native libraries from pinned upstream source with RAR/unRAR native sources excluded.
 
 Payload binaries are generated under `payloads/out/` and then packaged by Gradle. They are not committed to the source repository and are not extracted from any opaque APK.
@@ -63,8 +65,8 @@ See [PAYLOAD_SUPPLY_CHAIN.md](PAYLOAD_SUPPLY_CHAIN.md), [payloads/README.md](pay
 ## Review Notes
 
 - The metadata file is `metadata/io.github.rufid.yml`.
-- The current upstream tag is `v0.1.1`.
-- The GitLab MR is currently source-submitted; fork pipeline behavior may differ from the final F-Droid buildserver run.
+- The current upstream tag is `v0.2.0`.
+- The GitLab MR was merged; future F-Droid updates should track tagged upstream releases.
 - F-Droid reviewers should verify the staged payload scripts, payload hashes, FreeDOS package-source audit/source-build manifest, 7-Zip-JBinding RAR/unRAR exclusion, and absence of opaque APK-derived payloads.
 
 ## Local F-Droid Smoke Check

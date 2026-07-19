@@ -1,0 +1,116 @@
+name: Release APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-24.04
+    env:
+      ANDROID_API: "24"
+      NDK_VERSION: "29.0.14206865"
+      RUFID_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+      RUFID_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      RUFID_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+
+      - name: Install Gradle 8.9
+        env:
+          GRADLE_SHA256: d725d707bfabd4dfdc958c624003b3c80accc03f7037b5122c4b1d0ef15cecab
+        run: |
+          GRADLE_ZIP="${RUNNER_TEMP}/gradle-8.9-bin.zip"
+          curl -fsSLo "${GRADLE_ZIP}" \
+            https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          printf '%s  %s\n' "${GRADLE_SHA256}" "${GRADLE_ZIP}" | sha256sum -c -
+          unzip -q "${GRADLE_ZIP}" -d "${RUNNER_TEMP}"
+          echo "${RUNNER_TEMP}/gradle-8.9/bin" >> "${GITHUB_PATH}"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            autoconf automake bc bison clang cmake cpio curl dosfstools file flex \
+            g++ gcc git libgcrypt20-dev libgpg-error-dev libtool libtool-bin lld llvm \
+            make mingw-w64 mtools nasm ninja-build p7zip-full patch perl pkg-config \
+            python3 rsync unzip wget zip
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;${NDK_VERSION}"
+
+      - name: Build source payloads
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
+          bash scripts/fdroid/stage-source-payloads.sh
+
+      - name: Build and test release
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleRelease
+
+      - name: Sign release APK
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.ANDROID_SIGNING_KEY_BASE64 }}
+        run: |
+          test -n "${SIGNING_KEY_BASE64}"
+          test -n "${RUFID_KEY_ALIAS}"
+          test -n "${RUFID_STORE_PASSWORD}"
+          test -n "${RUFID_KEY_PASSWORD}"
+          KEYSTORE="${RUNNER_TEMP}/rufid-release.p12"
+          printf '%s' "${SIGNING_KEY_BASE64}" | base64 --decode > "${KEYSTORE}"
+          BUILD_TOOLS="${ANDROID_SDK_ROOT}/build-tools/35.0.0"
+          TAG="${GITHUB_REF_NAME:-manual}"
+          UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
+          ALIGNED="${RUNNER_TEMP}/Rufid-${TAG}-aligned.apk"
+          SIGNED="Rufid-${TAG}.apk"
+          "${BUILD_TOOLS}/zipalign" -f -p 4 "${UNSIGNED}" "${ALIGNED}"
+          "${BUILD_TOOLS}/apksigner" sign \
+            --ks "${KEYSTORE}" \
+            --ks-type PKCS12 \
+            --ks-key-alias "${RUFID_KEY_ALIAS}" \
+            --ks-pass env:RUFID_STORE_PASSWORD \
+            --key-pass env:RUFID_KEY_PASSWORD \
+            --out "${SIGNED}" \
+            "${ALIGNED}"
+          "${BUILD_TOOLS}/apksigner" verify --verbose --print-certs "${SIGNED}"
+          sha256sum "${SIGNED}" | tee "${SIGNED}.sha256"
+
+      - name: Publish tagged release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="release-notes-${GITHUB_REF_NAME}.md"
+          if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "Rufid ${GITHUB_REF_NAME#v}" \
+              --notes-file "${NOTES}"
+          fi
+          gh release upload "${GITHUB_REF_NAME}" \
+            "Rufid-${GITHUB_REF_NAME}.apk" \
+            "Rufid-${GITHUB_REF_NAME}.apk.sha256" \
+            --clobber
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: rufid-release-${{ github.ref_name }}
+          path: |
+            Rufid-*.apk
+            Rufid-*.apk.sha256
+
+      - name: Remove decoded signing key
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/rufid-release.p12"

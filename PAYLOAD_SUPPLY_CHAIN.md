@@ -20,7 +20,8 @@ Rufid does not commit generated payload binaries. Release and F-Droid builds gen
 | FreeDOS source-built image | `https://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/distributions/1.4/FD14-LiteUSB.zip` package/source input | input SHA-256 `857dcd2ebf9d3d094320154db5fb5b830acba6fb98f981a95a0ca7ab3350338b`; package source audit `65/65`; nested sources `62`; output SHA-256 `88ea18d67f25214428179530a1c2aa8709a3a02cb7ef26912909781620f02f3d` | `assets/payloads/dos/freedos.img` |
 | FreeDOS source-built archive | same as above | output SHA-256 `b51b5f4b462f895e3eb23bc906a18d42cdca9ee76de163ebdee6ef9f8c724c84` | `assets/payloads/dos/freedos.7z` |
 | OpenWatcom v2 toolchain | `https://github.com/open-watcom/open-watcom-v2.git` | `ec15f83f62ac025b0be76d34d608f18a6c59da20` / `2026-06-01-Build` | source-built build toolchain for strict FreeDOS build |
-| wimlib | `https://github.com/ebiggers/wimlib.git` | `77e0e2b4896e462a7ec21f59d2092ee4df2d94f4` / `v1.14.5` | `jniLibs/<abi>/libwimutils.so` |
+| wimlib + Rufid JNI bridge | `https://github.com/ebiggers/wimlib.git` plus `app/src/main/cpp/rufid_wim_jni.c` | `77e0e2b4896e462a7ec21f59d2092ee4df2d94f4` / `v1.14.5` | `jniLibs/<abi>/libwimutils.so`, `jniLibs/<abi>/librufidwim.so` |
+| NTFS-3G mkntfs + Rufid stream | `https://github.com/tuxera/ntfs-3g.git` plus `app/src/main/cpp/rufid_ntfs_stream.c` | `d327833ec1d5eb1358b6f2c37139f10a3460944d` / `2026.7.7` | `jniLibs/<abi>/librufidmkntfs.so`, `jniLibs/<abi>/librufidntfsstream.so` (host autogen needs `libgcrypt20-dev` + `libgpg-error-dev` for `AM_PATH_LIBGCRYPT`; configure uses `--disable-crypto`) |
 | 7-Zip-JBinding | `https://github.com/borisbrodski/sevenzipjbinding.git` and Android fork | `85d4923741aa85a5c90a6f69c1207c172a49ffa4`, Android `875f38aac441f41e6eb693177e020e97971dca97` | `jniLibs/<abi>/lib7-Zip-JBinding.so` |
 | Rufid rescue Linux profile | `https://buildroot.org/downloads/buildroot-2026.05.tar.xz` | SHA-256 `9d2f3af10fcac763a61ff6e41894a033f9ecf9267ba13dd0912eedcd3be2b22a` | `assets/payloads/linux/rufid-rescue-linux.img` |
 
@@ -69,7 +70,8 @@ Current F-Droid payload set:
 - included: FreeDOS source-built FAT16 boot image
 - included: FreeDOS source-built archive/provenance/package-source audit
 - included: UEFI:NTFS
-- included: wimlib Android libraries
+- included: wimlib Android libraries and Rufid JNI bridge
+- included: NTFS-3G `mkntfs` and Rufid NTFS stream tool
 - included: 7-Zip-JBinding Android libraries
 
 FreeDOS is built from the package sources carried by the official FreeDOS 1.4 LiteUSB archive, verified by SHA-256. Rufid records the exact upstream archive, audits the package-level corresponding source entries carried by the release media, and does not use APK-extracted FreeDOS payloads or copy `FD14LITE.img` as the final packaged image.

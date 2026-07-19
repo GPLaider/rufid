@@ -1,22 +1,21 @@
 # Rufid Implementation Status
 
-Date: 2026-06-21
+Date: 2026-07-20
 
 Target scope: clean implementation of Android boot-media writer workflows, with a full audited payload path for F-Droid.
 
 ## Built Artifacts
 
-- Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
-- Debug SHA-256: `863373d6542248ef6f6449eb86b9e32e1c3351baea6384f5d93735eb8020270d`
-- Debug size: `12311462` bytes
-- F-Droid payload release candidate: `app/build/outputs/apk/release/app-release-unsigned.apk`
-- Release SHA-256: `780247f4e6da6efb42b3892a0e97138d6226960cd2658a47896ac804241b111d`
-- Release size: `11882897` bytes
+- Signed GitHub release candidate: `Rufid-v0.2.0.apk`
+- Release SHA-256: `78e1a0c3892d5e75c203f035ce180ee633bc8e9cf831ac571c4622bbe4d40ee6`
+- Release size: `42070820` bytes
+- Signing certificate SHA-256: `45529ff4c5b7bc1ece7fe754b81e3bd360de080511ea073e2e7f22c99825ead2`
+- APK Signature Scheme v2/v3 verification: passed
 
 Build commands verified:
 
 ```powershell
-gradle --no-daemon :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+gradle --no-daemon :app:testDebugUnitTest :app:assembleRelease --rerun-tasks
 ```
 
 ```bash
@@ -26,11 +25,11 @@ shellcheck -x -S warning scripts/payloads/*.sh scripts/fdroid/*.sh scripts/wsl/*
 Build result:
 
 - `BUILD SUCCESSFUL`
-- `:app:assembleDebug` passed with staged payloads by default
-- `:app:assembleRelease` passed for the unsigned F-Droid payload candidate
-- `:app:testDebugUnitTest` passed: 22 tests, 0 failures
-- `:app:lintDebug` passed: `No issues found.`
-- Debug/release APK content check: staged payload/native entries `18`; `META-INF/version-control-info.textproto` absent.
+- `:app:assembleRelease` passed with staged payloads by default
+- `:app:testDebugUnitTest` passed: 112 tests, 0 failures
+- Release APK installed on the `RufidQA` Android x86_64 AVD and cold-launched successfully
+- FAT32, NTFS MBR, and NTFS GPT mode selection was observed in the signed APK
+- APK version readback: versionCode `4`, versionName `0.2.0`
 - WSL Arch `shellcheck` passed for payload, F-Droid, and WSL scripts
 
 ## Completed
@@ -73,7 +72,7 @@ The current release candidate includes:
 - `assets/payloads/uefi/uefi-ntfs.img`
 - `assets/payloads/uefi/uefi-ntfs.img.sha256`
 - `assets/payloads/uefi/uefi-ntfs.img.source.txt`
-- `lib/<abi>/libwimutils.so` for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`
+- `lib/<abi>/libwimutils.so` and `lib/<abi>/librufidwim.so` for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`
 - `lib/<abi>/lib7-Zip-JBinding.so` for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`
 
 The FreeDOS build also writes non-APK audit files under `payloads/out/source-provenance/freedos/`:
@@ -87,7 +86,7 @@ Current staged payload hashes:
 
 - `freedos.img`: `88ea18d67f25214428179530a1c2aa8709a3a02cb7ef26912909781620f02f3d`
 - `freedos.7z`: `b51b5f4b462f895e3eb23bc906a18d42cdca9ee76de163ebdee6ef9f8c724c84`
-- `uefi-ntfs.img`: `90ef88628ab417801472b1f563aab939afafb74e495f0787511068634f87713e`
+- `uefi-ntfs.img`: `aad87c173b59656e9689b8f30f4302ae5da4500efa541b1b2921d11e7173d53f`
 
 ## Device Write Test
 
@@ -162,9 +161,19 @@ Captured documentation screenshots:
 
 ## Remaining Engineering Steps
 
-- Add Java/native runtime integration for wimlib WIM split.
-- Add Java/native runtime integration for 7-Zip-JBinding archive extraction beyond ZIP.
+- Exercise FAT32/WIM split and NTFS MBR/GPT Windows writers on additional physical Android/USB combinations.
+- Validate the signed UEFI:NTFS and Windows boot chain across physical PC Secure Boot firmware before claiming broad compatibility.
 - Run and document real-device FAT32 recovery and additional exFAT recovery/reinitialize on multiple USB drives.
 - Add a safe USB filesystem target abstraction so copy/extract can write directly to a formatted USB volume.
 - Add checksum verification for direct downloads before/after writing.
 - Decide separately whether to enable the Buildroot rescue Linux profile as a bundled workflow.
+
+## 0.2.0 Virtual Windows Boot Gate
+
+- Generated FAT32, NTFS MBR, and NTFS GPT disk images inside an Android x86_64 AVD through `WindowsIsoBackendWriter`; no host-side replacement writer was used.
+- Used one 8,177,616,896-byte Windows 11 ISO with a 7,252,676,087-byte `install.wim`.
+- Verified FAT32 `install.swm`/`install2.swm` splitting and complete ISO tree placement.
+- Verified NTFS MBR/GPT full file path, size, and SHA-256 equality, plus GPT primary/backup headers and CRCs.
+- Booted all three AVD-produced images to the Windows Setup language screen with QEMU 11.0.2 and OVMF.
+- Verified Secure Boot enforcement with an unsigned negative control and a signed UEFI:NTFS/Windows positive control.
+- This closes the virtual backend/firmware gate only. Physical Android USB Host/BOT and real PC firmware compatibility remain community test gates.

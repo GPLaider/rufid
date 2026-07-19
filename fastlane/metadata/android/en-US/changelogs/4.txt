@@ -1,0 +1,10 @@
+Windows installer media support:
+
+- Write Windows ISOs as FAT32 UEFI media and split install.wim files larger than 4 GiB
+- Write unsplit Windows ISOs to NTFS with MBR or GPT UEFI:NTFS layouts
+- Add source-built wimlib and NTFS-3G runtime tools for all supported Android ABIs
+- Harden USB BOT status, residue, reset, and retry handling
+- Reject unsafe archive and Windows paths before writing
+- Validate all three Windows layouts to the Setup screen under QEMU/OVMF, including Secure Boot controls
+
+Physical Android/USB and PC firmware compatibility remains device-dependent.

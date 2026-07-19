@@ -1,14 +1,15 @@
-# Submit To F-Droid
+# F-Droid Maintenance
 
-Rufid has an active F-Droid submission path.
+Rufid is published on F-Droid and should keep its upstream metadata aligned with tagged releases.
 
 ## Current Status
 
 - App ID: `io.github.rufid`
 - Upstream repository: `https://github.com/GPLaider/rufid`
-- Upstream tag: `v0.1.1`
+- Upstream tag: `v0.2.0`
 - F-Droid metadata in this repo: `metadata/io.github.rufid.yml`
-- Active merge request: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/40885`
+- F-Droid package: `https://f-droid.org/packages/io.github.rufid/`
+- Inclusion merge request: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/40885` (merged)
 - Review notes: `FDROID.md`
 - Payload provenance: `PAYLOAD_SUPPLY_CHAIN.md`
 - Source-build policy: `FDROID_SOURCE_BUILD_POLICY.md`
@@ -23,13 +24,13 @@ Rufid has an active F-Droid submission path.
 - NDK r29 and Linux SDK setup helpers under `scripts/wsl/`.
 - Local build/audit report in `RUFID_AUDIT_REPORT.md`.
 
-## Before Reviewer Handoff
+## Ongoing F-Droid Maintenance
 
-1. Keep `commit: v0.1.1` unless F-Droid asks for an exact commit hash.
-2. Rebase the fdroiddata branch if GitLab marks the MR as needing rebase.
+1. Tag upstream releases before expecting F-Droid auto-update to pick them up.
+2. Keep `metadata/io.github.rufid.yml` aligned with the accepted fdroiddata metadata.
 3. Verify the F-Droid buildserver package list when payload script dependencies change.
 4. Keep FreeDOS package-source audit/source-build manifest, UEFI:NTFS, wimlib, and 7-Zip-JBinding RAR/unRAR-exclusion provenance current.
-5. Leave MR comments only for meaningful updates or reviewer requests.
+5. Leave fdroiddata comments only for meaningful updates or reviewer requests.
 
 FreeDOS is now presented as a source-built F-Droid payload: the build uses the official FreeDOS archive as package/source input, builds the selected FreeDOS artifacts, and assembles the packaged FAT16 image from those outputs.
 
