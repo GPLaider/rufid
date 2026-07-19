@@ -96,12 +96,22 @@ class Fat32VolumeBuilder(
             bytes[511] = 0xAA.toByte()
         }
 
-    fun fsInfoSector(layout: Fat32Layout = layout()): ByteArray =
+    fun fsInfoSector(
+        layout: Fat32Layout = layout(),
+        freeClusterCount: Long = layout.clusterCount - 1L,
+        nextFreeCluster: Long = 3L,
+    ): ByteArray =
         ByteArray(layout.sectorSize).also { bytes ->
+            require(freeClusterCount in 0L..layout.clusterCount) {
+                "Invalid FAT32 free cluster count: $freeClusterCount"
+            }
+            require(nextFreeCluster == 0xffff_ffffL || nextFreeCluster in 2L until layout.clusterCount + 2L) {
+                "Invalid FAT32 next free cluster: $nextFreeCluster"
+            }
             putLeInt(bytes, 0, 0x41615252)
             putLeInt(bytes, 484, 0x61417272)
-            putLeInt(bytes, 488, (layout.clusterCount - 1L).coerceAtMost(0xffff_ffffL).toInt())
-            putLeInt(bytes, 492, 3)
+            putLeInt(bytes, 488, freeClusterCount.coerceAtMost(0xffff_ffffL).toInt())
+            putLeInt(bytes, 492, nextFreeCluster.toInt())
             putLeInt(bytes, 508, 0xAA550000.toInt())
         }
 
@@ -113,8 +123,14 @@ class Fat32VolumeBuilder(
         }
 
     private fun chooseSectorsPerCluster(totalSectors: Long): Int {
-        val candidates = intArrayOf(1, 2, 4, 8, 16, 32, 64, 128)
+        val candidates = intArrayOf(128, 64, 32, 16, 8, 4, 2, 1)
         return candidates.firstOrNull { sectorsPerCluster ->
+            partitionPlan.sectorSize.toLong() * sectorsPerCluster.toLong() <= MAX_CLUSTER_SIZE_BYTES &&
+                hasValidClusterCount(totalSectors, sectorsPerCluster)
+        } ?: error("Unable to choose a FAT32 cluster size for $totalSectors sectors")
+    }
+
+    private fun hasValidClusterCount(totalSectors: Long, sectorsPerCluster: Int): Boolean {
             val sectorsPerFat = calculateSectorsPerFat(
                 totalSectors = totalSectors,
                 sectorSize = partitionPlan.sectorSize,
@@ -124,8 +140,7 @@ class Fat32VolumeBuilder(
             )
             val dataSectors = totalSectors - 32L - (2L * sectorsPerFat)
             val clusters = dataSectors / sectorsPerCluster
-            clusters in FAT32_MIN_CLUSTERS until FAT32_MAX_CLUSTERS
-        } ?: error("Unable to choose a FAT32 cluster size for $totalSectors sectors")
+            return clusters in FAT32_MIN_CLUSTERS until FAT32_MAX_CLUSTERS
     }
 
     private fun calculateSectorsPerFat(
@@ -176,6 +191,7 @@ class Fat32VolumeBuilder(
     private companion object {
         const val FAT32_MIN_CLUSTERS = 65_525L
         const val FAT32_MAX_CLUSTERS = 0x0ffffff5L
+        const val MAX_CLUSTER_SIZE_BYTES = 32 * 1024L
         const val ROOT_CLUSTER = 2
         const val FSINFO_SECTOR = 1
         const val BACKUP_BOOT_SECTOR = 6

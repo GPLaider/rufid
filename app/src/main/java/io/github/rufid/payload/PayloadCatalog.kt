@@ -1,6 +1,7 @@
 package io.github.rufid.payload
 
 import android.content.Context
+import android.os.Build
 import io.github.rufid.BuildConfig
 import java.io.File
 import java.util.zip.ZipFile
@@ -41,6 +42,9 @@ data class PayloadStatus(
 }
 
 object PayloadCatalog {
+    private val wimSplitLibraryFiles = listOf("libwimutils.so", "librufidwim.so")
+    private val ntfsRuntimeLibraryFiles = listOf("librufidmkntfs.so", "librufidntfsstream.so")
+
     val payloads: List<PayloadItem> = listOf(
         PayloadItem(
             id = "uefi-ntfs",
@@ -77,6 +81,33 @@ object PayloadCatalog {
             upstream = "https://github.com/ebiggers/wimlib",
             license = "LGPL-3.0-or-later or GPL-3.0-or-later, depending on build options",
             buildScript = "scripts/payloads/build-wimlib-android.sh",
+        ),
+        PayloadItem(
+            id = "rufid-wim-bridge",
+            label = "Rufid wimlib JNI bridge",
+            kind = PayloadKind.NativeLibrary,
+            packagedPath = "lib/<abi>/librufidwim.so",
+            upstream = "Rufid source tree plus https://github.com/ebiggers/wimlib",
+            license = "GPL-3.0-or-later; links to staged wimlib",
+            buildScript = "scripts/payloads/build-wimlib-android.sh",
+        ),
+        PayloadItem(
+            id = "ntfs3g-mkntfs",
+            label = "NTFS-3G mkntfs (source-built PIE)",
+            kind = PayloadKind.NativeLibrary,
+            packagedPath = "lib/<abi>/librufidmkntfs.so",
+            upstream = "https://github.com/tuxera/ntfs-3g tag 2026.7.7",
+            license = "GPL-2.0-or-later",
+            buildScript = "scripts/payloads/build-ntfs3g-android.sh",
+        ),
+        PayloadItem(
+            id = "ntfs3g-stream",
+            label = "Rufid NTFS stream tool (static libntfs-3g)",
+            kind = PayloadKind.NativeLibrary,
+            packagedPath = "lib/<abi>/librufidntfsstream.so",
+            upstream = "Rufid app/src/main/cpp/rufid_ntfs_stream.c + NTFS-3G 2026.7.7",
+            license = "GPL-2.0-or-later; links statically to libntfs-3g",
+            buildScript = "scripts/payloads/build-ntfs3g-android.sh",
         ),
         PayloadItem(
             id = "sevenzipjbinding",
@@ -118,6 +149,22 @@ object PayloadCatalog {
             ?.let { payload -> isPackaged(context, payload) }
             ?: false
 
+    fun wimSplitBridgePackaged(context: Context): Boolean =
+        nativeLibraryDirContainsAll(context, wimSplitLibraryFiles) ||
+            apkContainsAllNativeLibraries(
+                context.applicationInfo.sourceDir,
+                wimSplitLibraryFiles,
+                Build.SUPPORTED_ABIS.asList(),
+            )
+
+    fun ntfsRuntimePackaged(context: Context): Boolean =
+        nativeLibraryDirContainsAll(context, ntfsRuntimeLibraryFiles) ||
+            apkContainsAllNativeLibraries(
+                context.applicationInfo.sourceDir,
+                ntfsRuntimeLibraryFiles,
+                Build.SUPPORTED_ABIS.asList(),
+            )
+
     private fun isPackaged(context: Context, payload: PayloadItem): Boolean =
         when (payload.kind) {
             PayloadKind.Asset -> context.assets.list(payload.packagedPath.substringBeforeLast('/'))
@@ -133,17 +180,34 @@ object PayloadCatalog {
         File(context.applicationInfo.nativeLibraryDir).list()
             ?.contains(fileName) == true
 
-    internal fun apkContainsNativeLibrary(apkPath: String?, fileName: String): Boolean =
+    private fun nativeLibraryDirContainsAll(context: Context, fileNames: Collection<String>): Boolean {
+        val packagedNames = File(context.applicationInfo.nativeLibraryDir).list()?.toSet().orEmpty()
+        return fileNames.all(packagedNames::contains)
+    }
+
+    internal fun apkContainsNativeLibrary(
+        apkPath: String?,
+        fileName: String,
+        supportedAbis: Collection<String> = Build.SUPPORTED_ABIS.asList(),
+    ): Boolean = apkContainsAllNativeLibraries(apkPath, listOf(fileName), supportedAbis)
+
+    internal fun apkContainsAllNativeLibraries(
+        apkPath: String?,
+        fileNames: Collection<String>,
+        supportedAbis: Collection<String> = Build.SUPPORTED_ABIS.asList(),
+    ): Boolean =
         if (apkPath.isNullOrBlank()) {
             false
         } else {
             runCatching {
                 ZipFile(File(apkPath)).use { zip ->
-                    zip.entries().asSequence().any { entry ->
-                        !entry.isDirectory &&
-                            entry.name.startsWith("lib/") &&
-                            entry.name.endsWith("/$fileName")
-                    }
+                    val librariesByAbi = zip.entries().asSequence()
+                        .filterNot { it.isDirectory }
+                        .filter { it.name.startsWith("lib/") }
+                        .map { it.name.split('/') }
+                        .filter { it.size == 3 && it[1] in supportedAbis }
+                        .groupBy(keySelector = { it[1] }, valueTransform = { it[2] })
+                    librariesByAbi.values.any { libraries -> fileNames.all(libraries::contains) }
                 }
             }.getOrDefault(false)
         }

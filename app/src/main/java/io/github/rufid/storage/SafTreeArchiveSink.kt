@@ -25,15 +25,17 @@ class SafTreeArchiveSink(
         ensureDirectory(entry.path.safeSegments())
     }
 
-    override fun openEntry(entry: ArchiveEntryInfo): OutputStream? {
+    override fun openEntry(entry: ArchiveEntryInfo): OutputStream {
         val segments = entry.path.safeSegments()
-        if (segments.isEmpty()) return null
+        require(segments.isNotEmpty()) { "Archive file path is empty" }
         val parent = ensureDirectory(segments.dropLast(1))
         val name = segments.last()
         val file = findChild(parent, name, directory = false)
             ?: DocumentsContract.createDocument(contentResolver, parent, "application/octet-stream", name)
-            ?: return null
-        return contentResolver.openOutputStream(file, "wt")
+            ?: error("Unable to create file ${entry.path}")
+        return requireNotNull(contentResolver.openOutputStream(file, "wt")) {
+            "Unable to open ${entry.path} for writing"
+        }
     }
 
     private fun ensureDirectory(segments: List<String>): Uri {

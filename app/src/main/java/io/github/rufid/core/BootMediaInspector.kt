@@ -1,5 +1,7 @@
 package io.github.rufid.core
 
+import io.github.rufid.partition.UefiGptCodec
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 
 data class BootPartitionEntry(
@@ -25,6 +27,9 @@ data class BootMediaInspection(
     val partitions: List<BootPartitionEntry>,
     val bootSector: BootSectorInfo,
     val freeDosEvidence: List<String>,
+    val hasGptSignature: Boolean = false,
+    val gptPartitionCount: Int = 0,
+    val looksLikeNtfsVolume: Boolean = false,
 ) {
     val looksLikeFreeDos: Boolean
         get() = freeDosEvidence.isNotEmpty()
@@ -36,10 +41,27 @@ class BootMediaInspector(
     fun inspect(): BootMediaInspection {
         val mbr = readBlock(0)
         val partitions = parsePartitions(mbr)
-        val bootLba = partitions.firstOrNull()?.startSector ?: 0L
+        val protectiveGpt = partitions.any { it.typeHex.equals("0xEE", ignoreCase = true) }
+
+        // Protective GPT: strict GPT first, then VBR at Basic Data start LBA. Never treat LBA 1 as VBR.
+        // Plain MBR: first non-empty partition start (unchanged).
+        val bootLba: Long
+        val gptInfo: GptInspect
+        if (protectiveGpt) {
+            gptInfo = inspectGptStrict()
+            bootLba = gptInfo.basicDataStartLba
+                ?: throw IOException("Protective GPT has no Basic Data partition entry.")
+        } else {
+            gptInfo = GptInspect(hasSignature = false, occupiedEntries = 0, basicDataStartLba = null)
+            bootLba = partitions.firstOrNull()?.startSector ?: 0L
+        }
+
         val vbr = readBlock(bootLba)
         val bootSector = parseBootSector(bootLba, vbr)
         val evidence = freeDosEvidence(mbr, vbr, bootSector)
+
+        val looksNtfs = bootSector.oemName.uppercase().startsWith("NTFS") ||
+            bootSector.fileSystem?.uppercase()?.startsWith("NTFS") == true
 
         return BootMediaInspection(
             sizeBytes = blockDevice.sizeBytes,
@@ -48,15 +70,66 @@ class BootMediaInspector(
             partitions = partitions,
             bootSector = bootSector,
             freeDosEvidence = evidence,
+            hasGptSignature = gptInfo.hasSignature,
+            gptPartitionCount = gptInfo.occupiedEntries,
+            looksLikeNtfsVolume = looksNtfs,
+        )
+    }
+
+    private data class GptInspect(
+        val hasSignature: Boolean,
+        val occupiedEntries: Int,
+        val basicDataStartLba: Long?,
+    )
+
+    private fun inspectGptStrict(): GptInspect {
+        val header = readBlock(1)
+        if (header.decodeAscii(0, 8) != "EFI PART") {
+            throw IOException("Protective MBR indicates GPT but LBA 1 is not a GPT header.")
+        }
+        if (!UefiGptCodec.verifyHeaderCrc(header)) {
+            throw IOException("GPT primary header CRC invalid.")
+        }
+        val entriesLba = UefiGptCodec.entriesLba(header)
+        val entryCount = UefiGptCodec.numberOfPartitionEntries(header)
+        val entrySize = UefiGptCodec.sizeOfPartitionEntry(header)
+        require(entrySize == UefiGptCodec.PARTITION_ENTRY_SIZE) {
+            "Unsupported GPT partition entry size: $entrySize"
+        }
+        val arrayBytes = entryCount * entrySize
+        val entries = readFully(entriesLba * blockDevice.blockSize.toLong(), arrayBytes)
+        if (!UefiGptCodec.verifyPartitionArrayCrcMatchesHeader(header, entries)) {
+            throw IOException("GPT primary partition-array CRC does not match header.")
+        }
+        val occupied = UefiGptCodec.countOccupiedEntries(entries, entrySize)
+        val basicDataStart = UefiGptCodec.firstEntryStartLba(entries, UefiGptCodec.TYPE_BASIC_DATA, entrySize)
+        return GptInspect(
+            hasSignature = true,
+            occupiedEntries = occupied,
+            basicDataStartLba = basicDataStart,
         )
     }
 
     private fun readBlock(lba: Long): ByteArray {
-        val buffer = ByteArray(blockDevice.blockSize)
-        blockDevice.seek(lba * blockDevice.blockSize.toLong())
-        blockDevice.read(buffer, 0, buffer.size)
+        return readFully(lba * blockDevice.blockSize.toLong(), blockDevice.blockSize)
+    }
+
+    private fun readFully(byteOffset: Long, length: Int): ByteArray {
+        val buffer = ByteArray(length)
+        blockDevice.seek(byteOffset)
+        var done = 0
+        while (done < length) {
+            val read = blockDevice.read(buffer, done, length - done)
+            if (read <= 0) {
+                throw IOException("Short read at offset $byteOffset+$done (wanted $length, got $done).")
+            }
+            done += read
+        }
         return buffer
     }
+
+    private fun ByteArray.decodeAscii(offset: Int, length: Int): String =
+        String(copyOfRange(offset, offset + length), StandardCharsets.US_ASCII)
 
     private fun parsePartitions(mbr: ByteArray): List<BootPartitionEntry> =
         (0 until 4).mapNotNull { slot ->
@@ -88,6 +161,18 @@ class BootMediaInspector(
             )
         }
 
+        val oem = sector.asciiField(3, 8)
+        if (oem.uppercase().startsWith("NTFS")) {
+            // Volume label lives in the $Volume attribute, not a fixed VBR offset.
+            return BootSectorInfo(
+                lba = lba,
+                hasSignature = sector.hasBootSignature(),
+                oemName = oem,
+                volumeLabel = null,
+                fileSystem = "NTFS",
+            )
+        }
+
         val fat16Type = sector.asciiField(54, 8)
         val fat32Type = sector.asciiField(82, 8)
         val usesFat32Layout = fat32Type.startsWith("FAT")
@@ -98,7 +183,7 @@ class BootMediaInspector(
         return BootSectorInfo(
             lba = lba,
             hasSignature = sector.hasBootSignature(),
-            oemName = sector.asciiField(3, 8),
+            oemName = oem,
             volumeLabel = volumeLabel,
             fileSystem = fileSystem,
         )

@@ -10,6 +10,9 @@ Expected staged outputs:
 - `payloads/out/source-provenance/freedos/FREEDOS_SOURCE_AUDIT.txt`
 - `payloads/out/source-provenance/freedos/packages-source-manifest.tsv`
 - `payloads/out/jniLibs/<abi>/libwimutils.so`
+- `payloads/out/jniLibs/<abi>/librufidwim.so`
+- `payloads/out/jniLibs/<abi>/librufidmkntfs.so` (NTFS-3G mkntfs PIE)
+- `payloads/out/jniLibs/<abi>/librufidntfsstream.so` (Rufid stream tool + static libntfs-3g)
 - `payloads/out/jniLibs/<abi>/lib7-Zip-JBinding.so`
 
 ## Build Host
@@ -30,6 +33,9 @@ export ANDROID_API=24
 ./scripts/payloads/build-freedos-from-source.sh
 ./scripts/payloads/build-uefi-ntfs.sh
 ./scripts/payloads/build-wimlib-android.sh
+# Requires ANDROID_NDK_HOME (any NDK with LLVM toolchain; F-Droid uses metadata ndk).
+# Fresh ntfs-3g git needs host libgcrypt20-dev + libgpg-error-dev for AM_PATH_LIBGCRYPT during autogen.
+./scripts/payloads/build-ntfs3g-android.sh
 ./scripts/payloads/build-sevenzipjbinding-android.sh
 ```
 
@@ -47,13 +53,10 @@ Payload packaging is enabled by default. Use `-Prufid.includePayloads=false` onl
 
 ## F-Droid Source-Staged Hashes
 
-- `uefi-ntfs.img`: `90ef88628ab417801472b1f563aab939afafb74e495f0787511068634f87713e`
+- `uefi-ntfs.img`: `72683fa1250eeea772d3399277b434d4e55ba8dd0dc926e52d817e701fc2eb9e`
 - `freedos.img`: `88ea18d67f25214428179530a1c2aa8709a3a02cb7ef26912909781620f02f3d`
 - `freedos.7z`: `b51b5f4b462f895e3eb23bc906a18d42cdca9ee76de163ebdee6ef9f8c724c84`
-- `arm64-v8a/libwimutils.so`: `17b42b507a277c7f077ba6abb86c100438ca35778e2ccb3c926407f6bacf3759`
-- `armeabi-v7a/libwimutils.so`: `cd0c1fb014f79aef4d56790d48d862d180b05e14013d8df297e785aa1dde7275`
-- `x86/libwimutils.so`: `da4bbe1e02dba10ee2cea57c6ad151b8443b88149ac17366ccff7c09d7a74433`
-- `x86_64/libwimutils.so`: `41b73da667012739a7e2bc99ee7843ce7f85c5412b89ddca58d06c82ab1aaddb`
+- `libwimutils.so` and `librufidwim.so`: generated per ABI by `scripts/payloads/build-wimlib-android.sh`; hash sidecars are written beside each staged library.
 - `arm64-v8a/lib7-Zip-JBinding.so`: `2280b9be611546af17fd65dea4e0ac144edaf73ed39d7c5007f536103bd0d406`
 - `armeabi-v7a/lib7-Zip-JBinding.so`: `4655970f797364b3f68c20e579a1815eaf6ea1d4a8220d3376fdf3d43a8ece7a`
 - `x86/lib7-Zip-JBinding.so`: `d754541ed462c7d30ae8e557ee0a61e53094ab9fbd8e14531ff58e10ac7b992d`

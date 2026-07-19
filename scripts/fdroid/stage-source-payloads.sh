@@ -33,6 +33,7 @@ bash ./scripts/payloads/fetch-sources.sh
 bash ./scripts/payloads/build-freedos-from-source.sh
 bash ./scripts/payloads/build-uefi-ntfs.sh
 bash ./scripts/payloads/build-wimlib-android.sh
+bash ./scripts/payloads/build-ntfs3g-android.sh
 bash ./scripts/payloads/build-sevenzipjbinding-android.sh
 
 cat > payloads/out/FDROID_SOURCE_PAYLOADS.txt <<'EOF'
@@ -40,12 +41,17 @@ F-Droid payload staging:
 - included: FreeDOS source-built minimal FAT16 image
 - included: UEFI:NTFS
 - included: wimlib
+- included: NTFS-3G mkntfs + Rufid stream (source-built, no FUSE)
 - included: 7-Zip-JBinding
 
 FreeDOS uses the official FreeDOS 1.4 LiteUSB archive only as the verified
 package/source input. The staged payload image is assembled from source-built
 FreeDOS kernel, FreeCOM, SYS, and boot sector artifacts using a pinned
 source-built OpenWatcom toolchain.
+
+NTFS-3G git has no generated configure; F-Droid sudo must provide
+libgcrypt20-dev and libgpg-error-dev so autoreconf can expand AM_PATH_LIBGCRYPT.
+Build uses ANDROID_NDK_HOME from the F-Droid environment (metadata ndk field).
 EOF
 
 echo "Staged F-Droid payloads under payloads/out"

@@ -11,6 +11,10 @@ WIMLIB_REPO=https://github.com/ebiggers/wimlib.git
 WIMLIB_REF=77e0e2b4896e462a7ec21f59d2092ee4df2d94f4
 WIMLIB_TAG=v1.14.5
 
+NTFS3G_REPO=https://github.com/tuxera/ntfs-3g.git
+NTFS3G_REF=d327833ec1d5eb1358b6f2c37139f10a3460944d
+NTFS3G_TAG=2026.7.7
+
 SEVENZIP_JBINDING_REPO=https://github.com/borisbrodski/sevenzipjbinding.git
 SEVENZIP_JBINDING_REF=85d4923741aa85a5c90a6f69c1207c172a49ffa4
 SEVENZIP_JBINDING_TAG=master

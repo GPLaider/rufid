@@ -19,6 +19,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
@@ -35,19 +36,29 @@ import io.github.rufid.core.BootMediaInspector
 import io.github.rufid.core.ByteFormatter
 import io.github.rufid.core.CancellationToken
 import io.github.rufid.core.CapacityProbe
+import io.github.rufid.core.CacheBackedWimSplitStrategy
 import io.github.rufid.core.ImageClassifier
+import io.github.rufid.core.ImageKind
+import io.github.rufid.core.IsoImageReader
+import io.github.rufid.core.IsoExtractionPlanner
+import io.github.rufid.core.IsoExtractionSupport
+import io.github.rufid.core.IsoWriteMode
 import io.github.rufid.core.LastErrorReport
 import io.github.rufid.core.OperationCancelledException
+import io.github.rufid.core.Progress
 import io.github.rufid.core.RawImageWriter
 import io.github.rufid.core.ReadBenchmark
 import io.github.rufid.core.ReinitializeConfirmation
+import io.github.rufid.core.SeekableBlockDevice
 import io.github.rufid.core.WritePlan
+import io.github.rufid.core.VerificationKind
 import io.github.rufid.download.DirectDownloadWriter
 import io.github.rufid.download.OfficialImage
 import io.github.rufid.download.OfficialImageCatalog
 import io.github.rufid.archive.ArchiveKind
 import io.github.rufid.archive.ArchivePlan
 import io.github.rufid.archive.ZipArchiveExtractor
+import io.github.rufid.archive.SevenZipArchiveExtractor
 import io.github.rufid.format.ExFatVolumeBuilder
 import io.github.rufid.format.Fat32VolumeBuilder
 import io.github.rufid.format.RecoveryVolumeLabel
@@ -56,16 +67,26 @@ import io.github.rufid.format.UsbRecoveryPlan
 import io.github.rufid.format.UsbRecoveryPlanner
 import io.github.rufid.format.displayName
 import io.github.rufid.payload.PayloadCatalog
+import io.github.rufid.ntfs.NtfsNativeTools
+import io.github.rufid.ntfs.RealNtfsProcessLauncher
+import io.github.rufid.ntfs.SparseNtfsImageBuilder
+import io.github.rufid.ntfs.WindowsInstallBackendMode
+import io.github.rufid.ntfs.WindowsIsoBackendWriter
 import io.github.rufid.partition.BootPayloadKind
 import io.github.rufid.partition.FileSystemType
 import io.github.rufid.partition.MbrTable
 import io.github.rufid.partition.PartitionPlan
 import io.github.rufid.partition.PartitionTableType
+import io.github.rufid.partition.UefiArchitecture
+import io.github.rufid.partition.UefiNtfsPartitionTableMode
+import io.github.rufid.partition.UefiNtfsRuntimeWriter
+import io.github.rufid.partition.UefiNtfsSecureBootVerifier
 import io.github.rufid.storage.AndroidUriImageSource
 import io.github.rufid.storage.SafTreeArchiveSink
 import io.github.rufid.usb.UsbDeviceOpener
 import io.github.rufid.usb.UsbMassStorageDevice
 import io.github.rufid.windows.WindowsIsoPlan
+import java.io.File
 import java.io.OutputStream
 
 private data class UiPalette(
@@ -141,6 +162,7 @@ class MainActivity : Activity() {
     private var devices: List<UsbMassStorageDevice> = emptyList()
     private var selectedDevice: UsbMassStorageDevice? = null
     private var bootMode: BootMode = BootMode.Image
+    private var imageWriteMode: IsoWriteMode = IsoWriteMode.RawImage
     @Volatile
     private var currentOperation: CancellationToken? = null
 
@@ -154,6 +176,11 @@ class MainActivity : Activity() {
     private lateinit var imageModeButton: Button
     private lateinit var urlModeButton: Button
     private lateinit var freeDosModeButton: Button
+    private lateinit var rawWriteModeButton: Button
+    private lateinit var windowsFat32ModeButton: Button
+    private lateinit var windowsNtfsMbrModeButton: Button
+    private lateinit var windowsNtfsGptModeButton: Button
+    private lateinit var imageWriteModeText: TextView
     private lateinit var progressBar: ProgressBar
 
     private val usbPermissionReceiver = object : BroadcastReceiver() {
@@ -185,6 +212,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        currentOperation?.cancel()
         runCatching { unregisterReceiver(usbPermissionReceiver) }
         super.onDestroy()
     }
@@ -332,19 +360,23 @@ class MainActivity : Activity() {
             addView(officialIsoRow)
         })
 
-        content.addView(panel("Format options") {
-            addView(compactOptionRow(
-                "Partition scheme",
-                "MBR",
-                "Target system",
-                "BIOS or UEFI",
-            ))
-            addView(compactOptionRow(
-                "File system",
-                "Image-defined",
-                "Volume label",
-                "Auto",
-            ))
+        content.addView(panel("Write method") {
+            imageWriteModeText = formValueText(imageWriteMode.displayName)
+            addView(formRow("Selected method", imageWriteModeText))
+            rawWriteModeButton = actionButton("RAW / DD", ButtonTone.Primary) {
+                setImageWriteMode(IsoWriteMode.RawImage)
+            }
+            windowsFat32ModeButton = actionButton("WIN FAT32", ButtonTone.Secondary) {
+                setImageWriteMode(IsoWriteMode.WindowsFat32)
+            }
+            windowsNtfsMbrModeButton = actionButton("WIN NTFS MBR", ButtonTone.Secondary) {
+                setImageWriteMode(IsoWriteMode.WindowsNtfsMbr)
+            }
+            windowsNtfsGptModeButton = actionButton("WIN NTFS GPT", ButtonTone.Secondary) {
+                setImageWriteMode(IsoWriteMode.WindowsNtfsGpt)
+            }
+            addView(buttonRow(rawWriteModeButton, windowsFat32ModeButton))
+            addView(buttonRow(windowsNtfsMbrModeButton, windowsNtfsGptModeButton))
         })
 
         content.addView(statusPanel())
@@ -633,6 +665,48 @@ class MainActivity : Activity() {
         setStatus(message)
     }
 
+    private fun setImageWriteMode(mode: IsoWriteMode) {
+        imageWriteMode = mode
+        renderImageWriteMode()
+        setStatus("Write method: ${mode.displayName}.")
+    }
+
+    private fun renderImageWriteMode() {
+        if (::imageWriteModeText.isInitialized) {
+            imageWriteModeText.text = when (imageWriteMode) {
+                IsoWriteMode.RawImage -> "Raw / DD - image-defined layout"
+                IsoWriteMode.WindowsFat32 -> "Windows FAT32 - UEFI installer"
+                IsoWriteMode.WindowsNtfsMbr -> "Windows NTFS - MBR + UEFI:NTFS"
+                IsoWriteMode.WindowsNtfsGpt -> "Windows NTFS - GPT + UEFI:NTFS"
+            }
+        }
+        if (::rawWriteModeButton.isInitialized) {
+            val enabled = bootMode == BootMode.Image
+            listOf(
+                rawWriteModeButton,
+                windowsFat32ModeButton,
+                windowsNtfsMbrModeButton,
+                windowsNtfsGptModeButton,
+            ).forEach { it.isEnabled = enabled }
+            applyButtonStyle(
+                rawWriteModeButton,
+                if (enabled && imageWriteMode == IsoWriteMode.RawImage) ButtonTone.Primary else ButtonTone.Secondary,
+            )
+            applyButtonStyle(
+                windowsFat32ModeButton,
+                if (enabled && imageWriteMode == IsoWriteMode.WindowsFat32) ButtonTone.Primary else ButtonTone.Secondary,
+            )
+            applyButtonStyle(
+                windowsNtfsMbrModeButton,
+                if (enabled && imageWriteMode == IsoWriteMode.WindowsNtfsMbr) ButtonTone.Primary else ButtonTone.Secondary,
+            )
+            applyButtonStyle(
+                windowsNtfsGptModeButton,
+                if (enabled && imageWriteMode == IsoWriteMode.WindowsNtfsGpt) ButtonTone.Primary else ButtonTone.Secondary,
+            )
+        }
+    }
+
     private fun renderBootSelection() {
         val modeLabel = when (bootMode) {
             BootMode.Image -> "Disk or ISO image"
@@ -651,6 +725,7 @@ class MainActivity : Activity() {
             applyButtonStyle(urlModeButton, if (bootMode == BootMode.Url) ButtonTone.Primary else ButtonTone.Secondary)
             applyButtonStyle(freeDosModeButton, if (bootMode == BootMode.FreeDos) ButtonTone.Primary else ButtonTone.Secondary)
         }
+        renderImageWriteMode()
 
         imageText.text = when (bootMode) {
             BootMode.Image -> {
@@ -659,7 +734,15 @@ class MainActivity : Activity() {
                     "No boot image selected."
                 } else {
                     val kind = ImageClassifier.classify(image.name)
-                    "${image.name}\n${ByteFormatter.format(image.size)} - $kind"
+                    val notice = IsoExtractionPlanner.preWriteNotice(image.name)
+                    buildString {
+                        appendLine(image.name)
+                        append("${ByteFormatter.format(image.size)} - $kind")
+                        if (notice != null) {
+                            appendLine()
+                            append(notice)
+                        }
+                    }
                 }
             }
             BootMode.Url -> {
@@ -777,29 +860,171 @@ class MainActivity : Activity() {
             return
         }
 
+        val kind = ImageClassifier.classify(image.name)
+        val mode = imageWriteMode
+        if (mode.requiresWindowsInstaller && kind != ImageKind.Iso && kind != ImageKind.WindowsIsoCandidate) {
+            setStatus("${mode.displayName} requires a Windows installer ISO.")
+            return
+        }
+        val message = buildString {
+            appendLine("This will overwrite ${device.label} with ${image.name}.")
+            appendLine()
+            appendLine("Write method: ${mode.displayName}.")
+            appendLine()
+            append(
+                when (mode) {
+                    IsoWriteMode.RawImage -> "The source bytes will be copied directly to the USB."
+                    IsoWriteMode.WindowsFat32 -> "Windows files will be extracted to a FAT32 UEFI installer. Large install.wim files are split."
+                    IsoWriteMode.WindowsNtfsMbr -> "Windows files remain unsplit on an NTFS data volume with an MBR UEFI:NTFS helper."
+                    IsoWriteMode.WindowsNtfsGpt -> "Windows files remain unsplit on an NTFS data volume with a GPT UEFI:NTFS helper."
+                },
+            )
+            if (mode == IsoWriteMode.WindowsNtfsMbr || mode == IsoWriteMode.WindowsNtfsGpt) {
+                appendLine()
+                appendLine()
+                append("Secure Boot compatibility is not verified on a physical PC.")
+            }
+        }
+
         AlertDialog.Builder(this)
             .setTitle("Erase and write USB?")
-            .setMessage("This will overwrite ${device.label} with ${image.name}.")
+            .setMessage(message)
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Write") { _, _ ->
-                safeAction("Write selected image to USB") { writeImage(image, device) }
+                safeAction("Write selected image to USB") { writeImage(image, device, mode) }
             }
             .show()
     }
 
-    private fun writeImage(image: AndroidUriImageSource, device: UsbMassStorageDevice) {
-        runIo("Writing image") { token ->
+    private fun writeImage(
+        image: AndroidUriImageSource,
+        device: UsbMassStorageDevice,
+        mode: IsoWriteMode,
+    ) {
+        runIo("Writing ${mode.displayName}") { token ->
             UsbDeviceOpener.open(device).useBlockDevice { blockDevice ->
                 val plan = WritePlan(image.name, image.size, device.label, blockDevice.sizeBytes)
-                plan.validate()
-                val writer = RawImageWriter(blockDevice)
-                image.open(contentResolver).use { input ->
-                    writer.write(input, image.size, token) { progress ->
-                        postProgress("Writing ${image.name}: ${progress.percent}% (${ByteFormatter.format(progress.bytesDone)})", progress.percent)
+                when (mode) {
+                    IsoWriteMode.RawImage -> {
+                        plan.validate()
+                        writeRawImage(image, blockDevice, token)
+                    }
+                    IsoWriteMode.WindowsFat32,
+                    IsoWriteMode.WindowsNtfsMbr,
+                    IsoWriteMode.WindowsNtfsGpt,
+                    -> {
+                        plan.validateForExtraction()
+                        writeWindowsIso(image, blockDevice, token, mode)
                     }
                 }
             }
         }
+    }
+
+    private fun writeWindowsIso(
+        image: AndroidUriImageSource,
+        blockDevice: SeekableBlockDevice,
+        token: CancellationToken,
+        mode: IsoWriteMode,
+    ) {
+        image.openSeekable(contentResolver).use { source ->
+            val isoPlan = IsoImageReader.plan(source, image.name)
+            if (isoPlan.support != IsoExtractionSupport.WindowsInstaller) {
+                throw UnsupportedOperationException(
+                    "${mode.displayName} requires a Windows installer ISO with bootmgr, EFI boot files, and install.wim or install.esd.",
+                )
+            }
+            if (
+                mode == IsoWriteMode.WindowsFat32 &&
+                isoPlan.requiresWimSplit &&
+                !PayloadCatalog.wimSplitBridgePackaged(this)
+            ) {
+                throw UnsupportedOperationException(
+                    "Large install.wim requires the packaged wimlib bridge, but this APK does not contain both native libraries.",
+                )
+            }
+
+            val backendMode = when (mode) {
+                IsoWriteMode.WindowsFat32 -> WindowsInstallBackendMode.Fat32Extraction
+                IsoWriteMode.WindowsNtfsMbr -> WindowsInstallBackendMode.NtfsUefiMbr
+                IsoWriteMode.WindowsNtfsGpt -> WindowsInstallBackendMode.NtfsUefiGpt
+                IsoWriteMode.RawImage -> error("Raw mode does not use a Windows ISO backend.")
+            }
+            val usesNtfs = backendMode.usesNtfs
+            if (usesNtfs && !PayloadCatalog.ntfsRuntimePackaged(this)) {
+                throw UnsupportedOperationException("NTFS runtime tools are not packaged in this APK.")
+            }
+            if (usesNtfs && !PayloadCatalog.isPackaged(this, "uefi-ntfs")) {
+                throw UnsupportedOperationException("UEFI:NTFS helper payload is not packaged in this APK.")
+            }
+
+            val extractDir = File(filesDir, "ntfs-tools").also { it.mkdirs() }
+            val nativeDir = File(applicationInfo.nativeLibraryDir)
+            val imageBuilder = if (usesNtfs) {
+                SparseNtfsImageBuilder(
+                    nativeLibraryDir = extractDir,
+                    launcher = RealNtfsProcessLauncher.forAndroid(cacheDir),
+                    toolResolver = { name ->
+                        NtfsNativeTools.resolveFromContext(
+                            nativeLibraryDir = nativeDir,
+                            apkPath = applicationInfo.sourceDir,
+                            extractDir = extractDir,
+                            name = name,
+                            preferredAbis = Build.SUPPORTED_ABIS,
+                        )
+                    },
+                )
+            } else {
+                null
+            }
+            val helperImage = if (usesNtfs) {
+                assets.open(UEFI_NTFS_IMAGE_ASSET).use { it.readBytes() }
+            } else {
+                null
+            }
+
+            WindowsIsoBackendWriter(
+                blockDevice = blockDevice,
+                mode = backendMode,
+                imageBuilder = imageBuilder,
+                helperImage = helperImage,
+                cacheDir = cacheDir,
+                wimSplitStrategy = CacheBackedWimSplitStrategy(cacheDir),
+            ).write(source, image.name, token) { progress ->
+                postProgress(
+                    "${mode.displayName} ${progress.phase}: ${progress.percent}% (${ByteFormatter.format(progress.bytesDone)})",
+                    progress.percent,
+                )
+            }
+        }
+        postStatus(
+            when (mode) {
+                IsoWriteMode.WindowsFat32 ->
+                    "Windows FAT32 write and structural verification finished for ${image.name}."
+                IsoWriteMode.WindowsNtfsMbr ->
+                    "Windows NTFS MBR write and sparse readback verification finished for ${image.name}. Secure Boot is not verified on a physical PC."
+                IsoWriteMode.WindowsNtfsGpt ->
+                    "Windows NTFS GPT write and sparse readback verification finished for ${image.name}. Secure Boot is not verified on a physical PC."
+                IsoWriteMode.RawImage -> error("Raw mode does not use Windows ISO completion status.")
+            },
+        )
+    }
+
+    private fun writeRawImage(
+        image: AndroidUriImageSource,
+        blockDevice: SeekableBlockDevice,
+        token: CancellationToken,
+    ) {
+        val writer = RawImageWriter(blockDevice)
+        image.open(contentResolver).use { input ->
+            writer.write(input, image.size, token) { progress ->
+                postProgress(
+                    "Writing ${image.name}: ${progress.percent}% (${ByteFormatter.format(progress.bytesDone)})",
+                    progress.percent,
+                )
+            }
+        }
+        postStatus(IsoExtractionPlanner.rawWriteFinishedMessage(image.name))
     }
 
     private fun verifySelectedImage() {
@@ -814,20 +1039,78 @@ class MainActivity : Activity() {
             return
         }
 
-        runIo("Verifying image") { token ->
+        val mode = imageWriteMode
+        val kind = ImageClassifier.classify(image.name)
+        if (mode.requiresWindowsInstaller && kind != ImageKind.Iso && kind != ImageKind.WindowsIsoCandidate) {
+            setStatus("${mode.displayName} structural verification requires a Windows installer ISO selection.")
+            return
+        }
+
+        val title = when (mode.verificationKind) {
+            VerificationKind.RawBytes -> "Verifying raw bytes"
+            VerificationKind.WindowsStructure -> "Verifying Windows structure"
+        }
+        runIo(title) { token ->
             UsbDeviceOpener.open(device).useBlockDevice { blockDevice ->
-                WritePlan(image.name, image.size, device.label, blockDevice.sizeBytes).validate()
-                image.open(contentResolver).use { input ->
-                    val result = BlockDeviceVerifier(blockDevice).verify(input, image.size, token) { progress ->
-                        postProgress("Verifying ${image.name}: ${progress.percent}% (${ByteFormatter.format(progress.bytesDone)})", progress.percent)
+                when (mode.verificationKind) {
+                    VerificationKind.RawBytes -> {
+                        WritePlan(image.name, image.size, device.label, blockDevice.sizeBytes).validate()
+                        image.open(contentResolver).use { input ->
+                            val result = BlockDeviceVerifier(blockDevice).verify(input, image.size, token) { progress ->
+                                postProgress(
+                                    "Verifying raw bytes for ${image.name}: ${progress.percent}% (${ByteFormatter.format(progress.bytesDone)})",
+                                    progress.percent,
+                                )
+                            }
+                            if (result.matched) {
+                                postStatus("Raw byte verification matched ${ByteFormatter.format(result.checkedBytes)}.")
+                            } else {
+                                postStatus("Raw byte verification mismatch at ${ByteFormatter.format(result.mismatchOffset ?: 0L)}.")
+                            }
+                        }
                     }
-                    if (result.matched) {
-                        postStatus("Verification matched ${ByteFormatter.format(result.checkedBytes)}.")
-                    } else {
-                        postStatus("Verification mismatch at ${ByteFormatter.format(result.mismatchOffset ?: 0L)}.")
+                    VerificationKind.WindowsStructure -> {
+                        token.throwIfCancelled()
+                        val inspection = BootMediaInspector(blockDevice).inspect()
+                        token.throwIfCancelled()
+                        postStatus(windowsStructuralVerificationMessage(mode, inspection))
                     }
                 }
             }
+        }
+    }
+
+    private fun windowsStructuralVerificationMessage(
+        mode: IsoWriteMode,
+        inspection: io.github.rufid.core.BootMediaInspection,
+    ): String {
+        check(inspection.hasMbrSignature) { "Windows USB has no valid MBR signature." }
+        return when (mode) {
+            IsoWriteMode.WindowsFat32 -> {
+                check(inspection.bootSector.fileSystem.orEmpty().uppercase().startsWith("FAT")) {
+                    "Windows FAT32 verification found ${inspection.bootSector.fileSystem ?: "unknown filesystem"}."
+                }
+                "Windows FAT32 structural verification matched MBR and FAT boot metadata. Source byte comparison is not applicable."
+            }
+            IsoWriteMode.WindowsNtfsMbr -> {
+                check(inspection.looksLikeNtfsVolume) { "Windows NTFS MBR verification did not find an NTFS VBR." }
+                check(!inspection.hasGptSignature) { "Windows NTFS MBR verification unexpectedly found GPT metadata." }
+                check(inspection.partitions.any { it.typeHex == "0x07" }) {
+                    "Windows NTFS MBR verification did not find the 0x07 data partition."
+                }
+                check(inspection.partitions.any { it.typeHex == "0xEF" }) {
+                    "Windows NTFS MBR verification did not find the 0xEF helper partition."
+                }
+                "Windows NTFS MBR structural verification matched MBR, NTFS VBR, and UEFI:NTFS helper partition. Secure Boot is not verified on a physical PC."
+            }
+            IsoWriteMode.WindowsNtfsGpt -> {
+                check(inspection.looksLikeNtfsVolume) { "Windows NTFS GPT verification did not find an NTFS VBR." }
+                check(inspection.hasGptSignature && inspection.gptPartitionCount >= 2) {
+                    "Windows NTFS GPT verification did not find a valid two-partition GPT layout."
+                }
+                "Windows NTFS GPT structural verification matched GPT metadata, NTFS VBR, and helper layout. Secure Boot is not verified on a physical PC."
+            }
+            IsoWriteMode.RawImage -> error("Raw mode uses byte verification, not Windows structural verification.")
         }
     }
 
@@ -1131,7 +1414,13 @@ class MainActivity : Activity() {
             appendLine("Image: ${image.name}")
             appendLine("Detected kind: ${ImageClassifier.classify(image.name)}")
             appendLine(plan.summary())
-            appendLine("WIM split engine is intentionally not bundled yet; wimlib integration needs source distribution.")
+            appendLine(
+                if (PayloadCatalog.wimSplitBridgePackaged(this@MainActivity)) {
+                    "WIM split bridge: ready in this APK. Large install.wim files can be split before the USB is formatted."
+                } else {
+                    "WIM split bridge: unavailable in this APK. Large install.wim writes will stop before the USB is formatted."
+                },
+            )
         }
         showMessage("Windows ISO helper", message)
     }
@@ -1166,7 +1455,8 @@ class MainActivity : Activity() {
             "Format plan preview",
             "Windows ISO helper",
             "Archive plan",
-            "Extract ZIP",
+            "Extract archive",
+            "Write UEFI:NTFS helper layout",
             "Payload status",
             "Last error report",
         )
@@ -1186,8 +1476,9 @@ class MainActivity : Activity() {
                         8 -> previewWindowsHelper()
                         9 -> previewArchivePlan()
                         10 -> pickZipExtractTree()
-                        11 -> showPayloadStatus()
-                        12 -> showLastErrorReport()
+                        11 -> confirmAndWriteUefiNtfsHelper()
+                        12 -> showPayloadStatus()
+                        13 -> showLastErrorReport()
                     }
                 }
             }
@@ -1305,6 +1596,75 @@ class MainActivity : Activity() {
         showMessage("Payload status", PayloadCatalog.summary(this))
     }
 
+    private fun confirmAndWriteUefiNtfsHelper() {
+        val device = selectedDevice
+        if (device == null) {
+            setStatus("Select a USB device first.")
+            return
+        }
+        if (!usbManager.hasPermission(device.device)) {
+            requestSelectedUsbPermission()
+            return
+        }
+        if (!PayloadCatalog.isPackaged(this, "uefi-ntfs")) {
+            setStatus("UEFI:NTFS helper payload is not packaged in this APK.")
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Write UEFI:NTFS helper layout?")
+            .setMessage(
+                "This rewrites the MBR on ${device.label}: partition 1 type 0x07 (NTFS data area, empty filesystem) " +
+                    "and partition 2 type 0xEF with the packaged UEFI:NTFS helper image. " +
+                    "It does not create a full NTFS filesystem or copy Windows files. " +
+                    "Existing USB contents will be unusable until you reformat or rewrite.",
+            )
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Write layout") { _, _ ->
+                safeAction("Write UEFI:NTFS helper layout") { writeUefiNtfsHelper(device) }
+            }
+            .show()
+    }
+
+    private fun writeUefiNtfsHelper(device: UsbMassStorageDevice) {
+        runIo("Writing UEFI:NTFS helper layout") { _ ->
+            UsbDeviceOpener.open(device).useBlockDevice { blockDevice ->
+                val helperImage = assets.open(UEFI_NTFS_IMAGE_ASSET).use { it.readBytes() }
+                // Explicit MBR partition-table mode (0x07 + 0xEF). Not GPT hybrid.
+                val layout = UefiNtfsRuntimeWriter(
+                    blockDevice = blockDevice,
+                    mode = UefiNtfsPartitionTableMode.Mbr,
+                    payloadSource = { helperImage },
+                ).write()
+                val pinnedSignedPayload = UefiNtfsSecureBootVerifier()
+                    .matchesPinnedSignedPayload(helperImage, UefiArchitecture.X64)
+                postStatus(
+                    "UEFI:NTFS layout written to ${device.label}: " +
+                        "mode=${layout.mode}, " +
+                        "data LBA ${layout.dataStartSector} type 0x07, " +
+                        "helper LBA ${layout.helperStartSector} type 0xEF, " +
+                        "Pinned signed X64 helper payload matched: $pinnedSignedPayload. " +
+                        "Secure Boot boot compatibility is not verified.",
+                )
+                main.post {
+                    showMessage(
+                        "UEFI:NTFS helper layout",
+                        buildString {
+                            appendLine("Partition table mode: ${layout.mode} (MBR 0x07 + 0xEF; no GPT).")
+                            appendLine("MBR and helper image written.")
+                            appendLine("Data partition: LBA ${layout.dataStartSector}, sectors ${layout.dataSectorCount}, type 0x07")
+                            appendLine("Helper ESP: LBA ${layout.helperStartSector}, sectors ${layout.helperSectorCount}, type 0xEF")
+                            appendLine("Helper size: ${ByteFormatter.format(helperImage.size.toLong())}")
+                            appendLine("Pinned signed X64 helper payload matched: $pinnedSignedPayload")
+                            appendLine("Secure Boot compatibility: not verified on a physical PC")
+                            appendLine("NTFS filesystem content on the data volume was not written.")
+                        },
+                    )
+                }
+            }
+        }
+    }
+
     private fun confirmAndWriteFreeDos() {
         val device = selectedDevice
         if (device == null) {
@@ -1364,12 +1724,12 @@ class MainActivity : Activity() {
     private fun pickZipExtractTree() {
         val image = selectedImage
         if (image == null) {
-            setStatus("Select a ZIP archive first.")
+            setStatus("Select a ZIP or 7z archive first.")
             return
         }
         val kind = ArchivePlan.classify(image.name)
-        if (kind != ArchiveKind.Zip) {
-            setStatus("ZIP extraction is implemented; $kind requires a reviewed dependency plan.")
+        if (kind != ArchiveKind.Zip && kind != ArchiveKind.SevenZip) {
+            setStatus("ZIP and 7z extraction are implemented; $kind is not supported.")
             return
         }
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
@@ -1385,23 +1745,39 @@ class MainActivity : Activity() {
     private fun extractZipToTree(treeUri: Uri) {
         val image = selectedImage
         if (image == null) {
-            setStatus("Select a ZIP archive first.")
+            setStatus("Select a ZIP or 7z archive first.")
             return
         }
-        runIo("Extracting ZIP") { token ->
+        runIo("Extracting archive") { token ->
             val sink = SafTreeArchiveSink(contentResolver, treeUri)
-            image.open(contentResolver).use { input ->
-                ZipArchiveExtractor().extract(
-                    input = input,
-                    sink = sink,
-                    cancellationToken = token,
-                    onEntry = { entry -> postStatus("Extracting ${entry.path}") },
-                    onProgress = { progress ->
-                        postProgress("Extracted ${ByteFormatter.format(progress.bytesDone)} from ${image.name}", progress.percent)
-                    },
-                )
+            val onEntry = { entry: io.github.rufid.archive.ArchiveEntryInfo -> postStatus("Extracting ${entry.path}") }
+            val onProgress = { progress: Progress ->
+                postProgress("Extracted ${ByteFormatter.format(progress.bytesDone)} from ${image.name}", progress.percent)
             }
-            postStatus("ZIP extraction finished for ${image.name}.")
+            if (ArchivePlan.classify(image.name) == ArchiveKind.SevenZip) {
+                val staged = File.createTempFile("rufid-archive-", ".7z", cacheDir)
+                try {
+                    image.open(contentResolver).use { input ->
+                        staged.outputStream().use { output ->
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            while (true) {
+                                token.throwIfCancelled()
+                                val count = input.read(buffer)
+                                if (count < 0) break
+                                output.write(buffer, 0, count)
+                            }
+                        }
+                    }
+                    SevenZipArchiveExtractor().extract(staged, sink, token, onEntry, onProgress)
+                } finally {
+                    staged.delete()
+                }
+            } else {
+                image.open(contentResolver).use { input ->
+                    ZipArchiveExtractor().extract(input, sink, token, onEntry, onProgress)
+                }
+            }
+            postStatus("Archive extraction finished for ${image.name}.")
         }
     }
 
@@ -1430,6 +1806,7 @@ class MainActivity : Activity() {
         }
     }
 
+    @SuppressLint("WakelockTimeout")
     private fun runIo(title: String, work: (CancellationToken) -> Unit) {
         if (currentOperation != null) {
             setStatus("Another operation is already running.")
@@ -1437,11 +1814,13 @@ class MainActivity : Activity() {
         }
 
         val token = CancellationToken.active()
+        val wakeLock = operationWakeLock(title)
         currentOperation = token
         setProgressBarValue(0)
         setStatus("$title started.")
         Thread {
             try {
+                wakeLock.acquire()
                 work(token)
                 if (token.isCancelled) {
                     postStatus("$title cancelled.")
@@ -1454,11 +1833,19 @@ class MainActivity : Activity() {
                 LastErrorReport.write(this, title, error)
                 postStatus("$title failed: ${LastErrorReport.userMessage(error)}")
             } finally {
+                if (wakeLock.isHeld) wakeLock.release()
                 main.post {
                     if (currentOperation === token) currentOperation = null
                 }
             }
         }.start()
+    }
+
+    private fun operationWakeLock(title: String): PowerManager.WakeLock {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        return powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$WAKE_LOCK_TAG:$title").apply {
+            setReferenceCounted(false)
+        }
     }
 
     private fun safeAction(title: String, action: () -> Unit) {
@@ -1474,17 +1861,19 @@ class MainActivity : Activity() {
 
     private fun postProgress(message: String, percent: Int) {
         main.post {
+            if (isDestroyed) return@post
             progressBar.progress = percent.coerceIn(0, 100)
             statusText.text = message
         }
     }
 
     private fun postStatus(message: String) {
-        main.post { setStatus(message) }
+        main.post { if (!isDestroyed) setStatus(message) }
     }
 
     private fun postFinished(title: String) {
         main.post {
+            if (isDestroyed) return@post
             progressBar.progress = 100
             if (statusText.text.toString() == "$title started.") {
                 statusText.text = "$title finished."
@@ -1553,6 +1942,8 @@ class MainActivity : Activity() {
         private const val REQ_PICK_EXTRACT_TREE = 12
         private const val FREEDOS_IMAGE_ASSET = "payloads/dos/freedos.img"
         private const val FREEDOS_IMAGE_SIZE_ASSET = "payloads/dos/freedos.img.size"
+        private const val UEFI_NTFS_IMAGE_ASSET = "payloads/uefi/uefi-ntfs.img"
+        private const val WAKE_LOCK_TAG = "Rufid:IoOperation"
     }
 }
 

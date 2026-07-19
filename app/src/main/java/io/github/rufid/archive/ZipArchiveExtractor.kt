@@ -14,7 +14,7 @@ data class ArchiveEntryInfo(
 
 interface ArchiveEntrySink {
     fun createDirectory(entry: ArchiveEntryInfo) = Unit
-    fun openEntry(entry: ArchiveEntryInfo): OutputStream?
+    fun openEntry(entry: ArchiveEntryInfo): OutputStream
 }
 
 class ZipArchiveExtractor(
@@ -39,10 +39,11 @@ class ZipArchiveExtractor(
                     size = entry.size,
                     directory = entry.isDirectory,
                 )
+                ArchivePathValidator.requireSafe(info.path, info.directory)
                 onEntry(info)
 
                 if (!info.directory) {
-                    sink.openEntry(info)?.use { output ->
+                    sink.openEntry(info).use { output ->
                         while (true) {
                             cancellationToken.throwIfCancelled()
                             val read = zip.read(buffer)

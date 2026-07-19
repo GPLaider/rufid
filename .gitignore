@@ -5,6 +5,8 @@ local.properties
 __pycache__/
 *.pyc
 app/build/
+app/src/androidTest/assets/wim/split-fixture.wim
+app/src/androidTest/assets/wim/split-fixture.wim.sha256
 build/
 payloads/build/
 payloads/out/

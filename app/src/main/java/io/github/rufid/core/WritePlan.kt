@@ -7,11 +7,14 @@ data class WritePlan(
     val targetSize: Long,
 ) {
     fun validate() {
-        require(imageSize > 0) { "Image is empty." }
-        require(targetSize > 0) { "Target device has unknown size." }
+        validateForExtraction()
         require(imageSize <= targetSize) {
             "Image is larger than target device: image=$imageSize target=$targetSize"
         }
     }
-}
 
+    fun validateForExtraction() {
+        require(imageSize > 0) { "Image is empty." }
+        require(targetSize > 0) { "Target device has unknown size." }
+    }
+}

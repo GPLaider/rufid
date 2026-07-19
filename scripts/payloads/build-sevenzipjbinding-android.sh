@@ -106,12 +106,23 @@ if [[ "$found" != "1" ]]; then
   exit 1
 fi
 
+aar_source="$src/sevenzipjbinding/build/outputs/aar/sevenzipjbinding-release.aar"
+if [[ ! -f "$aar_source" ]]; then
+  echo "Build completed but the Android 7-Zip-JBinding AAR was not found: $aar_source" >&2
+  exit 1
+fi
+aar_dir="$PAYLOAD_ROOT/out/aar"
+mkdir -p "$aar_dir"
+cp "$aar_source" "$aar_dir/sevenzipjbinding.aar"
+write_sha256_sidecar "$aar_dir/sevenzipjbinding.aar"
+
 cat > "$PAYLOAD_ROOT/out/jniLibs/sevenzipjbinding.source.txt" <<EOF
 Source: $SEVENZIP_JBINDING_ANDROID_REPO
 Ref: $SEVENZIP_JBINDING_ANDROID_REF
 Upstream Java/native source reference: $SEVENZIP_JBINDING_REPO @ $SEVENZIP_JBINDING_REF
 RAR/unRAR native sources: excluded from CMake before build
 Output: jniLibs/<abi>/lib7-Zip-JBinding.so
+Java runtime: aar/sevenzipjbinding.aar
 EOF
 
 echo "Built/staged Android 7-Zip-JBinding libraries under $PAYLOAD_ROOT/out/jniLibs"

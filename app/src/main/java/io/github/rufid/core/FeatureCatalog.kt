@@ -46,8 +46,8 @@ object FeatureCatalog {
         ),
         RufidFeature(
             "Windows ISO helper",
-            "WIM split and FAT32 4GB flow are modeled; wimlib integration requires source distribution.",
-            FeatureStatus.LicenseReviewRequired,
+            "Windows ISO extraction writes a FAT32 UEFI layout; large install.wim uses the packaged source-built wimlib bridge.",
+            FeatureStatus.ImplementedFoundation,
         ),
         RufidFeature(
             "FreeDOS / MS-DOS boot",
@@ -56,12 +56,12 @@ object FeatureCatalog {
         ),
         RufidFeature(
             "UEFI:NTFS helper",
-            "Workflow is tracked; boot payloads require exact source, notices, and reproducibility plan.",
-            FeatureStatus.LicenseReviewRequired,
+            "MBR/GPT two-partition layout and pinned signed helper-payload matching are implemented. NTFS data-volume integration is in progress; Secure Boot compatibility remains unverified until a physical Secure Boot ON boot test passes.",
+            FeatureStatus.ImplementedFoundation,
         ),
         RufidFeature(
             "Archive extraction",
-            "ZIP extraction to a selected SAF folder is implemented; 7z and WIM need reviewed dependencies.",
+            "ZIP and source-built 7-Zip-JBinding extraction to a selected SAF folder are implemented with path preflight and cancellation.",
             FeatureStatus.ImplementedFoundation,
         ),
         RufidFeature(

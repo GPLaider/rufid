@@ -11,6 +11,14 @@ data class Progress(
     enum class Phase {
         Writing,
         Verifying,
+        /** NTFS stream populate into sparse staging image. */
+        Populating,
+        /** NTFS stream byte-verify of staging image. */
+        VerifyingNtfs,
+        /** Sparse allocated-extent copy to USB data partition. */
+        CopyingSparse,
+        /** Sparse allocated-extent compare staging vs USB. */
+        ComparingSparse,
         Finished,
     }
 }

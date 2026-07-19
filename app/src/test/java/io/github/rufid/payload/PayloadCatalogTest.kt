@@ -11,10 +11,14 @@ import org.junit.Test
 class PayloadCatalogTest {
     @Test
     fun findsNativeLibraryInsideApkZip() {
-        val apk = apkWithEntries("lib/arm64-v8a/libwimutils.so")
+        val apk = apkWithEntries(
+            "lib/arm64-v8a/libwimutils.so",
+            "lib/arm64-v8a/librufidwim.so",
+        )
 
         try {
-            assertTrue(PayloadCatalog.apkContainsNativeLibrary(apk.absolutePath, "libwimutils.so"))
+            assertTrue(PayloadCatalog.apkContainsNativeLibrary(apk.absolutePath, "libwimutils.so", TEST_ABIS))
+            assertTrue(PayloadCatalog.apkContainsNativeLibrary(apk.absolutePath, "librufidwim.so", TEST_ABIS))
         } finally {
             apk.delete()
         }
@@ -25,7 +29,56 @@ class PayloadCatalogTest {
         val apk = apkWithEntries("assets/payloads/uefi/uefi-ntfs.img")
 
         try {
-            assertFalse(PayloadCatalog.apkContainsNativeLibrary(apk.absolutePath, "libwimutils.so"))
+            assertFalse(PayloadCatalog.apkContainsNativeLibrary(apk.absolutePath, "libwimutils.so", TEST_ABIS))
+        } finally {
+            apk.delete()
+        }
+    }
+
+    @Test
+    fun requiresBothNativeLibrariesForWimSplitBridge() {
+        val incompleteApk = apkWithEntries("lib/arm64-v8a/libwimutils.so")
+        val completeApk = apkWithEntries(
+            "lib/arm64-v8a/libwimutils.so",
+            "lib/arm64-v8a/librufidwim.so",
+        )
+
+        try {
+            assertFalse(
+                PayloadCatalog.apkContainsAllNativeLibraries(
+                    incompleteApk.absolutePath,
+                    listOf("libwimutils.so", "librufidwim.so"),
+                    TEST_ABIS,
+                ),
+            )
+            assertTrue(
+                PayloadCatalog.apkContainsAllNativeLibraries(
+                    completeApk.absolutePath,
+                    listOf("libwimutils.so", "librufidwim.so"),
+                    TEST_ABIS,
+                ),
+            )
+        } finally {
+            incompleteApk.delete()
+            completeApk.delete()
+        }
+    }
+
+    @Test
+    fun rejectsWimSplitLibrariesFromDifferentAbis() {
+        val apk = apkWithEntries(
+            "lib/arm64-v8a/libwimutils.so",
+            "lib/x86_64/librufidwim.so",
+        )
+
+        try {
+            assertFalse(
+                PayloadCatalog.apkContainsAllNativeLibraries(
+                    apk.absolutePath,
+                    listOf("libwimutils.so", "librufidwim.so"),
+                    listOf("arm64-v8a", "x86_64"),
+                ),
+            )
         } finally {
             apk.delete()
         }
@@ -41,5 +94,9 @@ class PayloadCatalogTest {
             }
         }
         return apk
+    }
+
+    private companion object {
+        val TEST_ABIS = listOf("arm64-v8a", "x86_64")
     }
 }
