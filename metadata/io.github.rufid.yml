@@ -8,43 +8,43 @@ Changelog: https://github.com/GPLaider/rufid/releases
 
 AutoName: Rufid
 
-MaintainerNotes: |-
-  The build must not use payloads extracted from opaque APKs. FreeDOS uses the
-  official FreeDOS 1.4 LiteUSB archive only as a verified package/source input;
-  the staged FAT16 image is assembled from source-built FreeDOS kernel, FreeCOM,
-  SYS, and boot sector artifacts, with package-source audit records kept outside
-  the APK. UEFI:NTFS and wimlib are built from pinned upstream source paths.
-  7-Zip-JBinding is built from pinned upstream source with RAR/unRAR native
-  sources excluded from the Android CMake input.
-
 RepoType: git
 Repo: https://github.com/GPLaider/rufid.git
 
 Builds:
-  - versionName: 0.1.1
-    versionCode: 2
-    commit: v0.1.1
+  - versionName: 0.2.0
+    versionCode: 4
+    commit: e1987355a6d7e3f523dd1546e1fff7051c2bae97
+    subdir: app
     sudo:
       - apt-get update
-      - apt-get install -y --no-install-recommends autoconf automake bc bison clang cmake cpio curl dosfstools file flex g++ gcc git lld llvm make mingw-w64 mtools nasm ninja-build p7zip-full patch perl pkg-config python3 rsync unzip wget zip
+      - apt-get install -y --no-install-recommends autoconf automake clang cmake cpio
+        dosfstools file flex g++ libgcrypt20-dev libgpg-error-dev libtool libtool-bin lld llvm make
+        mingw-w64 mtools nasm ninja-build p7zip-full patch perl pkg-config
     gradle:
       - yes
-    rm:
-      - payloads/build
-      - payloads/downloads
-      - payloads/out
-      - payloads/sources
+    prebuild: sdkmanager "platforms;android-35" "build-tools;35.0.0"
     build:
-      - export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$ANDROID_NDK}"
-      - export ANDROID_HOME="${ANDROID_HOME:-$ANDROID_SDK}"
-      - export ANDROID_SDK_ROOT="$ANDROID_HOME"
-      - export ANDROID_API=24
-      - bash ./scripts/fdroid/stage-source-payloads.sh
+      - export PATH=$PATH:/usr/sbin
+      - bash ../scripts/fdroid/stage-source-payloads.sh
     ndk: r29
     gradleprops:
       - rufid.includePayloads=true
 
+MaintainerNotes: |-
+  Payloads must not be extracted from any opaque APK. FreeDOS uses the official
+  FreeDOS 1.4 LiteUSB archive only as a verified package/source input; the
+  staged FAT16 image is assembled from source-built FreeDOS kernel, FreeCOM,
+  SYS, and boot sector artifacts, with package-source audit records kept outside
+  the APK. UEFI:NTFS, wimlib, and NTFS-3G (mkntfs + Rufid stream tool) are built
+  from pinned upstream source paths. 7-Zip-JBinding is built from pinned upstream
+  source with RAR/unRAR native sources excluded from the Android CMake input.
+  NTFS-3G git has no generated configure; autogen/autoreconf needs AM_PATH_LIBGCRYPT
+  from libgcrypt20-dev (and libgpg-error-dev). Crypto remains disabled at configure
+  time (--disable-crypto); the m4 macro is still required to generate configure.
+  Native builds use ANDROID_NDK_HOME from the F-Droid ndk: field (currently r29).
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[\d.]+$
-CurrentVersion: 0.1.1
-CurrentVersionCode: 2
+CurrentVersion: 0.2.0
+CurrentVersionCode: 4
